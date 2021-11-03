@@ -8,7 +8,7 @@ import java.text.Normalizer
 trait Custom[+R]:
   def maybeNorm: Fix[Lang]
   def apply(context: NormVal, arg: NormVal): Either[String, NormVal]
-  def andThen(next: NormVal): Either[String, NormVal]
+  def andThen(pre: NormVal): Either[String, NormVal]
 
 type NormV[+A] = EitherK[Custom, Lang, A @uncheckedVariance]
 type NormVal   = Fix[NormV]
