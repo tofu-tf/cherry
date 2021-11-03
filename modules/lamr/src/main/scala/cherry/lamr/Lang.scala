@@ -6,18 +6,21 @@ enum RecordKey:
 
 case class LibRef(pack: String, element: String)
 
-enum Types[+R]:
+sealed trait Lang[+R]
+
+enum Types[+R] extends Lang[R]:
   case Record(fields: Map[RecordKey, R])
   case Flow(domain: R, result: R)
   case Type
 
-enum Lang[+R]:
+enum Basic[+R] extends Lang[R]:
   case Get(key: RecordKey)
   case Create(record: Map[RecordKey, R])
   case AndThen(left: R, right: R)
-  case Rename(perm: Map[RecordKey, RecordKey])
   case External(ref: LibRef)
 
-enum Closure[+R]:
-  case Lambda(args: R, body: R)
+enum Closure[+R] extends Lang[R]:
+  case Lambda(domain: R, body: R)
   case Apply(lam: R, args: R)
+
+
