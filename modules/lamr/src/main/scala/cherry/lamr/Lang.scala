@@ -1,4 +1,5 @@
 package cherry.lamr
+import cherry.fix.Fix
 
 enum RecordKey:
   case Symbol(name: String)
@@ -6,21 +7,25 @@ enum RecordKey:
 
 case class LibRef(pack: String, element: String)
 
-sealed trait Lang[+R]
+case class TypeOptions()
 
-enum Types[+R] extends Lang[R]:
+enum Lang[+R]:
   case Record(fields: Map[RecordKey, R])
-  case Flow(domain: R, result: R)
-  case Type
-
-enum Basic[+R] extends Lang[R]:
+  case Merge(base: R, deps: R)
+  case Function(body: R)
+  case Type(options: TypeOptions)
+  
   case Get(key: RecordKey)
   case Create(record: Map[RecordKey, R])
+
   case AndThen(left: R, right: R)
+  case Capture(domain: R, body: R)
+  case Apply(lam: R)
+
   case External(ref: LibRef)
 
-enum Closure[+R] extends Lang[R]:
-  case Lambda(domain: R, body: R)
-  case Apply(lam: R, args: R)
+  case Str(value: String)
+  case Int(value: BigInt)
+  case Bool(value: Boolean)
 
-
+type LangVal = Fix[Lang]
