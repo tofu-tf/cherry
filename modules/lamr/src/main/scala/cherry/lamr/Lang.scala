@@ -10,17 +10,17 @@ case class LibRef(pack: String, element: String)
 case class TypeOptions()
 
 enum Lang[+R]:
-  case Record(fields: Map[RecordKey, R])
-  case Merge(base: R, deps: R)
-  case Function(body: R)
+  case Record(name: RecordKey, typ: R)
+  case Extend(base: R, deps: R)
+  case Function(domain: R, body: R)
   case Type(options: TypeOptions)
   
   case Get(key: RecordKey)
-  case Create(record: Map[RecordKey, R])
+  case Set(key: RecordKey, term: R)
 
   case AndThen(left: R, right: R)
   case Capture(domain: R, body: R)
-  case Apply(lam: R)
+  case Expand(lam: R)
 
   case External(ref: LibRef)
 

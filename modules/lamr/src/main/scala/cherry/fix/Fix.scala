@@ -5,6 +5,8 @@ import tofu.syntax.monadic.given
 import cats.Traverse
 import cats.Eval
 import tofu.syntax.collections.given
+import cherry.utils.DisplayK
+import tofu.common.Display
 
 type Fix[+G[+_]] = Fix.Fix[G]
 
@@ -29,4 +31,10 @@ object Fix:
       val gc = Eval.later(fix.unpack.map(_.foldHist(f)))
       Cofree(gc.flatMap(f).memoize, gc)
     end foldHist
+
+  given [F[+_]](using fdisplay: DisplayK[F]): Display[Fix[F]] with
+    given Display[Fix[F]]                              = this
+    val dispF: Display[F[Fix[F]]]                      = fdisplay.displayWith[Fix[F]]
+    def displayBuild(cfg: Display.Config, fix: Fix[F]) = dispF.displayBuild(cfg, fix.unpack)
+
 end Fix
