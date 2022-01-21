@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "3.1.0"
+ThisBuild / scalaVersion := "3.1.1"
 
 val modules = file("modules")
 

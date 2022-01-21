@@ -5,7 +5,14 @@ import cherry.lamr.{Lang, LibRef}
 import cherry.fix.Fix
 import tofu.syntax._
 import cats.syntax.show._
+import cherry.utils.Act
+import cherry.lamr.RecordKey
 
+case class Symbol(id: Long, name: String)
+
+type Partial[+A] = Lang[A] | Symbol
+
+type PartialTerm = Fix[Partial]
 trait Normalizer:
   def bigStep(term: PartialTerm, context: PartialTerm): Process[PartialTerm]
 
@@ -16,28 +23,26 @@ trait NormValue:
 
   def position: Option[Position] = None
 
-  def error(message: String) = Error(message, Some(toPartial), position).raise
+  def error(cause: Cause) = Error(cause, Some(toPartial), position).raise
 
-  def apply(term: NormValue): Process[NormValue] = error("not applicable")
+  def apply(term: NormValue): Process[NormValue] = error(Cause.BadType("function"))
 
-  def asInt: Process[BigInt] = error("not an int")
+  def asInt: Process[BigInt] = error(Cause.BadType("int"))
 
-  def asFloat: Process[Double] = error("not a float")
+  def asFloat: Process[Double] = error(Cause.BadType("float"))
 
-  def asString: Process[String] = error("not a string")
+  def asString: Process[String] = error(Cause.BadType("string"))
 
-  def getKey: Process[NormValue] = error("key ")
-
-type Partial[+A] = Lang[A] | Symbol
-
-type PartialTerm = Fix[Partial]
+  def get(key: RecordKey): Process[NormValue] = error(Cause.BadType("record"))
 
 trait Library:
   def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer): Process[PartialTerm]
 
-// class LibraryPack(includes: Map[String, Library]) extends Library:
-// end LibraryPack
+class LibraryPack(includes: Map[String, Library]) extends Library:
+  def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer) =
+    for
+      lib  <- Act.option(includes.get(ref.pack), Error(Cause.MissingLibrary(ref.pack), None, Some(position)))
+      term <- lib.resolve(context, position, ref, normalizer)
+    yield term
 
-// class UmamiNormalizer(library: Library) extends Normalizer:
-
-// end UmamiNormalizer
+end LibraryPack
