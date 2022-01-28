@@ -1,16 +1,12 @@
 package cherry.utils
 
-import cats.Applicative
-import cats.Eval
-import cats.Monad
-import cats.Parallel
-import cats.StackSafeMonad
-import cats.arrow.FunctionK
-import cats.syntax.parallel.given
-
 import scala.annotation.tailrec
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
+
+import cats.arrow.FunctionK
+import cats.syntax.parallel.given
+import cats.{Applicative, Eval, Monad, Parallel, StackSafeMonad}
 
 enum Act[State, +Err, +Res]:
   case Pure(res: Res)
@@ -51,6 +47,7 @@ enum Act[State, +Err, +Res]:
       }
 
   def run(init: State): (State, Either[Vector[Err], Res]) = runIter(init).result
+end Act
 object Act:
   def pure[S, A](a: A): Act[S, Nothing, A] = Act.Pure(a)
 

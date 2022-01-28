@@ -6,6 +6,8 @@ import scala.compiletime.{erasedValue, summonInline, summonFrom, constValueTuple
 import cats.Eval
 import tofu.syntax.collections.*
 import tofu.optics.tags.field
+import scala.quoted.{Quotes, Type}
+import scala.quoted.Expr
 
 trait DisplayK[F[_]]:
   def displayWith[A: Display]: Display[F[A]]
@@ -31,7 +33,12 @@ object TofuDisplay:
 
   end FromDisplay
 
+  def tnameMacro[A](using Type[A])(using Quotes): Expr[String] = Expr(Type.show[A])
+
+  inline def tname[A]: String = ${ tnameMacro[A] }
+
   inline def derived[A](using m: Mirror.Of[A]): TofuDisplay[A]                                                      =
+    println("gogo")
     val instances: Vector[TofuDisplay[Any]] = summonDisplays[m.MirroredElemTypes].asInstanceOf[Vector[TofuDisplay[Any]]]
     inline m match
       case m: Mirror.SumOf[A]     => derivedSum(m, instances)
@@ -73,6 +80,7 @@ object TofuDisplay:
       case _: EmptyTuple => Vector.empty
       case _: (t *: ts)  =>
         type T = t
+        println(tname[t])
         summonFrom {
           case d: TofuDisplay[T] => d +: summonDisplays[ts]
           case _                 => FromDisplay(summonInline[Display[t]]) +: summonDisplays[ts]

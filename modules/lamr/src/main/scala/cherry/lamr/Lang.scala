@@ -14,8 +14,9 @@ enum Lang[+R]:
   case Extend(base: R, deps: R)
   case Function(domain: R, body: R)
   case Type(options: TypeOptions)
-  
+
   case Get(key: RecordKey)
+  case Unit
   case Set(key: RecordKey, term: R)
 
   case AndThen(left: R, right: R)
@@ -27,5 +28,8 @@ enum Lang[+R]:
   case Str(value: String)
   case Int(value: BigInt)
   case Bool(value: Boolean)
+
+object Lang:
+  extension (lang: Lang[Fix[Lang]]) def fix: Fix[Lang] = Fix(lang)
 
 type LangVal = Fix[Lang]

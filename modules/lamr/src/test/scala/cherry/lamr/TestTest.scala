@@ -15,12 +15,8 @@ class TestTest extends AnyFunSuite {
 
 case class A(s: String) derives TofuDisplay
 
-case class B(x: String, y: List[Int], as: List[A]) derives TofuDisplay
+case class B(x: String, y: List[Int] = Nil, as: List[A] = Nil, b: Option[B] = None) derives TofuDisplay
 
+// @main def testa() =
+//   println(parseId.parse("x123"))
 
-
-@main def testa() =
-  println("ohaio3")
-  import tofu.common.Display.given
-
-  println(B("x", List(1, 2), List(A("1"), A("2"))).display(Display.Config.default.copy(indent = "==")))

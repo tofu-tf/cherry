@@ -17,6 +17,7 @@ val testDependencies = libraryDependencies ++= Vector(
 val dependencies2 = Vector(
   "tf.tofu"       %% "tofu-kernel" % Version.tofu,
   "org.typelevel" %% "cats-free"   % Version.cats,
+  "org.typelevel" %% "cats-parse"  % Version.catsParse,
 ).map(_.cross(CrossVersion.for3Use2_13))
 
 val coreDependencies = libraryDependencies ++= dependencies2

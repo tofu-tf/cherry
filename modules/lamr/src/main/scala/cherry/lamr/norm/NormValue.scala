@@ -19,6 +19,8 @@ trait Normalizer:
 trait NormValue:
   def toPartial: PartialTerm
 
+  def headNorm: Process[NormValue] = Act.pure(this)
+
   def errorDisplay: Option[String] = Some(toPartial.toString)
 
   def position: Option[Position] = None
@@ -46,3 +48,4 @@ class LibraryPack(includes: Map[String, Library]) extends Library:
     yield term
 
 end LibraryPack
+
