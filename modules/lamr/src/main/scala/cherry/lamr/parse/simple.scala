@@ -29,15 +29,15 @@ val whitespace = charIn(' ', '\t', '\n').rep0.void
 
 extension [A](p: Parser[A]) def spaced: Parser[A] = p.surroundedBy(whitespace)
 
-val term = defer(composeTerm)
+val term = defer(theTerm)
 
-val assignment = identifier.spaced ~ (char('=') *> term)
+val assignment = identifier ~ (char('=').spaced *> term)
 
 val separator = char(',').orElse(char(';')).spaced
 
-val recordItem = assignment.eitherOr(term)
+val recordItem = assignment.eitherOr(term).spaced
 
-val listTerm = recordItem.repSep0(separator).map { ass =>
+val listTerm = recordItem.repSep(separator).map { ass =>
   ass.iterator
     .foldLeft((0, Vector.empty[(RecordKey, Fix[Lang])])) {
       case ((num, acc), Left(t))          => (num + 1, acc :+ (RecordKey.Index(num), t))
@@ -46,17 +46,37 @@ val listTerm = recordItem.repSep0(separator).map { ass =>
     ._2
 }
 
-val record = (char('[') *> recordList <* char(']')).map { ass =>
+val recordSyntax = listTerm.map { ass =>
   ass.iterator
     .map((key, term) => Lang.Set(key, term).fix)
-    .reduceOption(Lang.AndThen(_, _).fix)
-    .getOrElse(Lang.Unit)
+    .reduce(Lang.AndThen(_, _).fix)
 }
+
+val record = char('[') *> recordSyntax <* char(']')
 
 val integerTerm = integer.map(Lang.Int(_))
 
-val composeTerm: Parser[Fix[Lang]] = oneOf(List(integerTerm, record)).spaced
+val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
+
+val parensed = char('(') *> term <* char(')')
+
+val unitTerm = string("[]").as(Lang.Unit)
+
+val get = identifier.map(ident => Lang.Get(RecordKey.Symbol(ident)))
+
+val fixedTerm = oneOf(List(integerTerm, unitTerm, record, parensed, get))
+
+val application = fixedTerm.repSep(whitespace).map(_.reverse.reduce(Lang.AndThen(_, _).fix))
+
+val theTerm: Parser[Fix[Lang]] = application.spaced
 
 @main def testa() =
-  val string = """ [ x = 1 , y = 2, 3, 4, [] , z = []] """
-  println(term.parse(string))
+  val strings = Vector(
+    """ [ x = 1 , y = 2, 3, 4, [] , z = []] """,
+    """foo [ 3, 4 , 5 ]""",
+  )
+
+  println(recordItem.parse(" 3 "))
+
+  val s1 = "(1, 2, 3)"
+  for string <- strings do println(term.parse(string))
