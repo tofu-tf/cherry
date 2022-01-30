@@ -32,4 +32,8 @@ enum Lang[+R]:
 object Lang:
   extension (lang: Lang[Fix[Lang]]) def fix: Fix[Lang] = Fix(lang)
 
+  extension (term: Fix[Lang])
+    infix def applied(ctx: Fix[Lang]): Fix[Lang] =
+      Lang.AndThen(ctx, Expand(term).fix).fix
+
 type LangVal = Fix[Lang]
