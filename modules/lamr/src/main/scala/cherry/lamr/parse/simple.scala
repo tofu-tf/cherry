@@ -66,7 +66,7 @@ val get = identifier.map(ident => Lang.Get(RecordKey.Symbol(ident)))
 
 val fixedTerm = oneOf(List(integerTerm, unitTerm, record, parensed, get))
 
-val application = fixedTerm.repSep(whitespace).map(_.reverse.reduce(Lang.AndThen(_, _).fix))
+val application = fixedTerm.repSep(whitespace).map(_.reduce(_ applied _))
 
 val theTerm: Parser[Fix[Lang]] = application.spaced
 
