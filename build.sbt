@@ -14,17 +14,26 @@ val testDependencies = libraryDependencies ++= Vector(
   "org.scalatest" %% "scalatest" % Version.scalaTest % Test,
 )
 
-val dependencies2 = Vector(
+val lamrDependencies2 = libraryDependencies ++= Vector(
   "tf.tofu"       %% "tofu-kernel" % Version.tofu,
   "org.typelevel" %% "cats-free"   % Version.cats,
-  "org.typelevel" %% "cats-parse"  % Version.catsParse,
 ).map(_.cross(CrossVersion.for3Use2_13))
 
-val coreDependencies = libraryDependencies ++= dependencies2
+val parseDependencies2 = libraryDependencies ++= Vector(
+  "org.typelevel" %% "cats-parse" % Version.catsParse,
+).map(_.cross(CrossVersion.for3Use2_13))
 
-lazy val lamr = project
+val defaultSettings = publishSettings ++ testDependencies
+
+lazy val lamr  = project
   .in(modules / "lamr")
   .settings(name := "cherry-lamr")
-  .settings(publishSettings)
-  .settings(coreDependencies)
-  .settings(testDependencies)
+  .settings(lamrDependencies2)
+  .settings(defaultSettings)
+
+lazy val parse = project
+  .in(modules / "parse")
+  .settings(name := "cherry-parse")
+  .settings(defaultSettings)
+  .settings(parseDependencies2)
+  .dependsOn(lamr)

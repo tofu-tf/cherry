@@ -31,52 +31,45 @@ extension [A](p: Parser[A]) def spaced: Parser[A] = p.surroundedBy(whitespace)
 
 val term = defer(theTerm)
 
-val assignment = identifier ~ (char('=').spaced *> term)
+val symbolKey = (identifier.map(RecordKey.Symbol(_)) <* whitespace).backtrack
 
 val separator = char(',').orElse(char(';')).spaced
 
-val recordItem = assignment.eitherOr(term).spaced
-
-val listTerm = recordItem.repSep(separator).map { ass =>
-  ass.iterator
-    .foldLeft((0, Vector.empty[(RecordKey, Fix[Lang])])) {
-      case ((num, acc), Left(t))          => (num + 1, acc :+ (RecordKey.Index(num), t))
-      case ((num, acc), Right(name -> t)) => (num, acc :+ (RecordKey.Symbol(name), t))
-    }
-    ._2
+val listSyntax = term.repSep0(separator).map {
+  _.iterator.zipWithIndex.map { (t, i) => Lang.Set(RecordKey.Index(i), t).fix }
+    .foldLeft[Fix[Lang]](Lang.Unit)(Lang.AndThen(_, _).fix)
 }
 
-val recordSyntax = listTerm.map { ass =>
-  ass.iterator
-    .map((key, term) => Lang.Set(key, term).fix)
-    .reduce(Lang.AndThen(_, _).fix)
+val symbolTerm = (symbolKey ~ ((char('=') *> whitespace *> term).?)).map {
+  case (key, None)    => Lang.Get(key)
+  case (key, Some(t)) => Lang.Set(key, t).fix
 }
 
-val record = char('[') *> recordSyntax <* char(']')
+val listTerm = char('[') *> listSyntax <* char(']')
+
+val recordSyntax = term.repSep(separator).map(_.reduce(Lang.AndThen(_, _).fix))
+
+val recordTerm = char('(') *> recordSyntax <* char(')')
 
 val integerTerm = integer.map(Lang.Int(_))
 
 val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
 
-val parensed = char('(') *> term <* char(')')
+val fixedTerm = oneOf(List(integerTerm, recordTerm, listTerm, symbolTerm))
 
-val unitTerm = string("[]").as(Lang.Unit)
-
-val get = identifier.map(ident => Lang.Get(RecordKey.Symbol(ident)))
-
-val fixedTerm = oneOf(List(integerTerm, unitTerm, record, parensed, get))
-
-val application = fixedTerm.repSep(whitespace).map(_.reduce(_ applied _))
+val application = fixedTerm.repSep(whitespace).map(_.reduce(_(_)))
 
 val theTerm: Parser[Fix[Lang]] = application.spaced
 
 @main def testa() =
   val strings = Vector(
-    """ [ x = 1 , y = 2, 3, 4, [] , z = []] """,
-    """foo [ 3, 4 , 5 ]""",
+    """z = []""",
+    """ ( x = 1 , y = 2,  z = []) """,
+    "z z",
+    """foo [ 3, 4 , 5 ] (a = 2, b = 3)""",
   )
 
-  println(recordItem.parse(" 3 "))
-
   val s1 = "(1, 2, 3)"
+
+  Lang.rec(x = Lang.Unit, y = Lang.Int(2))
   for string <- strings do println(term.parse(string))
