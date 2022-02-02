@@ -9,7 +9,7 @@ enum RecordKey:
 object RecordKey:
 
   given Conversion[String, RecordKey] = Symbol(_)
-  given Conversion[Int, RecordKey] = Index(_)
+  given Conversion[Int, RecordKey]    = Index(_)
 
 case class LibRef(pack: String, element: String)
 
@@ -23,6 +23,7 @@ enum Lang[+R]:
 
   case Get(key: RecordKey)
   case Unit
+  case Id
   case Set(key: RecordKey, term: R)
 
   case AndThen(left: R, right: R)
@@ -38,18 +39,23 @@ enum Lang[+R]:
 object Lang:
   extension (lang: Lang[Fix[Lang]]) def fix: Fix[Lang] = Fix(lang)
 
-  given Conversion[String, Fix[Lang]] = Str(_) 
+  given Conversion[String, Fix[Lang]]    = Str(_)
   given Conversion[scala.Int, Fix[Lang]] = Int(_)
-  given Conversion[Boolean, Fix[Lang]] = Bool(_)
+  given Conversion[Boolean, Fix[Lang]]   = Bool(_)
 
   object rec extends Dynamic:
     def applyDynamicNamed(name: "apply")(assocs: (String, Fix[Lang])*): Fix[Lang] =
       assocs
-        .map((name, t) => Set(RecordKey.Symbol(name), t).fix)
-        .foldLeft[Fix[Lang]](Unit)((acc, t) => AndThen(acc, t).fix)
+        .map((name, t) => Set(name, t).fix)
+        .foldLeft[Fix[Lang]](Unit)((acc, t) => Extend(acc, t).fix)
+
+    def applyDynamic(name: "apply")(assocs: Fix[Lang]*): Fix[Lang] =
+      assocs.zipWithIndex
+        .map((t, i) => Set(i, t).fix)
+        .foldLeft[Fix[Lang]](Unit)((acc, t) => Extend(acc, t).fix)
 
   extension (term: Fix[Lang])
-    def apply(ctx: Fix[Lang]): Fix[Lang] =
-      Lang.AndThen(Expand(term).fix, ctx).fix
+    def apply(args: Fix[Lang]): Fix[Lang] =
+      Lang.AndThen(Extend(Id, args).fix, Expand(term).fix).fix
 
 type LangVal = Fix[Lang]
