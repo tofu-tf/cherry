@@ -21,7 +21,7 @@ enum Lang[+R]:
   case Function(domain: R, body: R)
   case Type(options: TypeOptions)
 
-  case Get(key: RecordKey)
+  case Get(key: RecordKey, up: Int = 0)
   case Unit
   case Id
   case Set(key: RecordKey, term: R)
@@ -33,14 +33,14 @@ enum Lang[+R]:
   case External(ref: LibRef)
 
   case Str(value: String)
-  case Int(value: BigInt)
+  case Integer(value: BigInt)
   case Bool(value: Boolean)
 
 object Lang:
-  extension (lang: Lang[Fix[Lang]]) def fix: Fix[Lang] = Fix(lang)
+  extension [G[+x] >: Lang[x]](lang: Lang[Fix[G]]) def fix: Fix[G] = Fix(lang)
 
   given Conversion[String, Fix[Lang]]    = Str(_)
-  given Conversion[scala.Int, Fix[Lang]] = Int(_)
+  given Conversion[scala.Int, Fix[Lang]] = Integer(_)
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
 
   object rec extends Dynamic:

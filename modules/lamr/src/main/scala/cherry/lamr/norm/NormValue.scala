@@ -37,6 +37,8 @@ trait NormValue:
 
   def get(key: RecordKey): Process[NormValue] = error(Cause.BadType("record"))
 
+  def layerUp: Process[NormValue] = Act.pure(this)
+
 trait Library:
   def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer): Process[PartialTerm]
 

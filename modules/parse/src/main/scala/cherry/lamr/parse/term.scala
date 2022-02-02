@@ -23,7 +23,7 @@ val listSyntax = term.repSep0(separator).map {
 }
 
 val symbolTerm = (symbolKey ~ ((char('=') *> whitespace *> term).?)).map {
-  case (key, None)    => Lang.Get(key)
+  case (key, None)    => Lang.Get(key, 0)
   case (key, Some(t)) => Lang.Set(key, t).fix
 }
 
@@ -33,7 +33,7 @@ val recordSyntax = term.repSep(separator).map(_.foldLeft[Fix[Lang]](Lang.Unit)(L
 
 val recordTerm = char('(') *> recordSyntax <* char(')')
 
-val integerTerm = integer.map(Lang.Int(_))
+val integerTerm = integer.map(Lang.Integer(_))
 
 val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
 
@@ -55,5 +55,5 @@ val termParser = term *> end
 
   val s1 = "(1, 2, 3)"
 
-  Lang.rec(x = Lang.Unit, y = Lang.Int(2))
+  Lang.rec(x = Lang.Unit, y = Lang.Integer(2))
   for string <- strings do println(term.parse(string))
