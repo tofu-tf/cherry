@@ -6,20 +6,24 @@ import cats.arrow.FunctionK
 import cats.Applicative
 import cats.syntax.applicative
 import cherry.utils.Act
-
-
-
+import cherry.lamr.RecordKey
 
 case class State(
-    symbolCount: Long,
-    inequasions: InequasionSystem[PartialTerm]
-)
+    var symbolCount: Long,
+    var inequasions: InequasionSystem[PartialTerm],
+    var position: Option[Position],
+    var term: Option[PartialTerm],
+    var errors: Vector[Error],
+) extends Act.Raising[Error]:
+  def error(e: => Error) = errors :+= e
 
-case class Position(start: Long, end: Long)
+case class Position(start: Long, end: Long):
+  def set: Process[Unit] = Act.Action(_.position = Some(this))
 
 enum Cause:
   case MissingLibrary(name: String)
   case BadType(expected: String)
+  case MissingKey(key: RecordKey)
 
   case Abort(message: String)
 
@@ -29,13 +33,13 @@ case class Error(
     position: Option[Position] = None,
 ):
 
-  def raise: Process[Nothing] = Act.Error(this)
+  def raise: Process[Nothing] = Act.error(this)
 
-type Process[+A] = Act[State, Error, A]
+type Process[+A] = Act[State, A]
 
 def newSymbol(name: String): Process[Symbol] =
-  Act.state { state =>
-    val count  = state.symbolCount + 1
-    val symbol = Symbol(count, name)
-    (state.copy(symbolCount = count), symbol)
+  Act.action { state =>
+    state.symbolCount += 1
+    val symbol = Symbol(state.symbolCount, name)
+    symbol
   }

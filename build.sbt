@@ -23,7 +23,11 @@ val parseDependencies2 = libraryDependencies ++= Vector(
   "org.typelevel" %% "cats-parse" % Version.catsParse,
 ).map(_.cross(CrossVersion.for3Use2_13))
 
-val defaultSettings = publishSettings ++ testDependencies
+val compilerSettints = scalacOptions ++= Vector(
+  "-Yexplicit-nulls"
+)
+
+val defaultSettings = publishSettings ++ testDependencies ++ compilerSettints
 
 lazy val lamr  = project
   .in(modules / "lamr")

@@ -14,7 +14,7 @@ type Partial[+A] = Lang[A] | Symbol
 
 type PartialTerm = Fix[Partial]
 trait Normalizer:
-  def bigStep(term: PartialTerm, context: PartialTerm): Process[PartialTerm]
+  def bigStep(term: PartialTerm, context: NormValue): Process[NormValue]
 
 trait NormValue:
   def toPartial: PartialTerm
@@ -25,19 +25,19 @@ trait NormValue:
 
   def position: Option[Position] = None
 
-  def error(cause: Cause) = Error(cause, Some(toPartial), position).raise
+  def isAbstract: Boolean = false
 
   def apply(term: NormValue): Process[NormValue] = error(Cause.BadType("function"))
 
-  def asInt: Process[BigInt] = error(Cause.BadType("int"))
-
-  def asFloat: Process[Double] = error(Cause.BadType("float"))
-
-  def asString: Process[String] = error(Cause.BadType("string"))
-
   def get(key: RecordKey): Process[NormValue] = error(Cause.BadType("record"))
 
-  def layerUp: Process[NormValue] = Act.pure(this)
+  def extend(term: NormValue): Process[NormValue] = ???
+
+  def narrow(domain: NormValue): Process[NormValue] = ???
+
+  def fieldTypes(domain: NormValue): Process[NormValue] = ???
+
+  final def error(cause: Cause) = Error(cause, Some(toPartial), position).raise
 
 trait Library:
   def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer): Process[PartialTerm]
@@ -50,4 +50,3 @@ class LibraryPack(includes: Map[String, Library]) extends Library:
     yield term
 
 end LibraryPack
-

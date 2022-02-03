@@ -13,10 +13,12 @@ type Fix[+G[+_]] = Fix.Fix[G]
 object Fix:
   opaque type Fix[+G[+_]] >: G[Nothing] <: G[Any] = G[Any]
 
+  given [G[+_]]: Conversion[G[Fix[G]], Fix[G]] = Fix(_)
+
   def apply[G[+_]](gf: G[Fix[G]]): Fix[G] = gf
 
   extension [G[+_]](fix: Fix[G])
-    def unpack: G[Fix[G]] = fix.asInstanceOf[G[Fix[G]]]
+    inline def unpack: G[Fix[G]] = fix.asInstanceOf[G[Fix[G]]]
 
     def fold[R](f: G[R] => R)(using Functor[G]): R =
       f(fix.unpack.map(_.fold(f)))
