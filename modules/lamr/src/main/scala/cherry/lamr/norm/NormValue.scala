@@ -7,8 +7,9 @@ import tofu.syntax._
 import cats.syntax.show._
 import cherry.utils.Act
 import cherry.lamr.RecordKey
+import cherry.lamr.norm.umami.NormType
 
-case class Symbol(id: Long, name: String)
+case class Symbol(id: Long, key: RecordKey)
 
 type Partial[+A] = Lang[A] | Symbol
 
@@ -27,15 +28,15 @@ trait NormValue:
 
   def isAbstract: Boolean = false
 
-  def apply(term: NormValue): Process[NormValue] = error(Cause.BadType("function"))
+  def apply(term: NormValue): Process[NormValue] = error(Cause.BadType(TypeCause.Function))
 
-  def get(key: RecordKey): Process[NormValue] = error(Cause.BadType("record"))
+  def get(key: RecordKey, up: Int): Process[NormValue] = error(Cause.BadType(TypeCause.Record))
 
-  def extend(term: NormValue): Process[NormValue] = ???
+  def asType: Process[NormType] = error(Cause.BadType(TypeCause.Type))
+
+  def merge(term: NormValue): Process[NormValue] = ???
 
   def narrow(domain: NormValue): Process[NormValue] = ???
-
-  def fieldTypes(domain: NormValue): Process[NormValue] = ???
 
   final def error(cause: Cause) = Error(cause, Some(toPartial), position).raise
 

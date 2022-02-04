@@ -20,9 +20,13 @@ case class State(
 case class Position(start: Long, end: Long):
   def set: Process[Unit] = Act.Action(_.position = Some(this))
 
+enum TypeCause:
+  case Record, Function, Type
+
+
 enum Cause:
   case MissingLibrary(name: String)
-  case BadType(expected: String)
+  case BadType(expected: TypeCause)
   case MissingKey(key: RecordKey)
 
   case Abort(message: String)

@@ -11,7 +11,7 @@ import tofu.syntax.monadic.given
 import scala.collection.mutable
 
 case class LayeredMap[K, +V](values: Map[K, List[V]], journal: Vector[(K, V)]):
-  def get(key: K, up: Int = 0): Option[V] = values.get(key).flatMap(_.lift(up))
+  def get(key: K, up: Int): Option[V] = values.get(key).flatMap(_.lift(up))
   
   def put[V1 >: V](key: K, value: V1)     = LayeredMap(
     values.updatedWith(key) {

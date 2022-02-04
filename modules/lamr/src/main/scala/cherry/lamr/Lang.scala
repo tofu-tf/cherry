@@ -25,6 +25,7 @@ enum Lang[+R]:
   case Unit
   case Id
   case Set(key: RecordKey, term: R)
+  case Merge(base: R, deps: R)
 
   case Narrow(term: R, typ: R)
 
