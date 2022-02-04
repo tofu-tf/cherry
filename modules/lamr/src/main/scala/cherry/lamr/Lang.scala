@@ -11,15 +11,20 @@ object RecordKey:
   given Conversion[String, RecordKey] = Symbol(_)
   given Conversion[Int, RecordKey]    = Index(_)
 
-case class LibRef(pack: String, element: String)
+case class LibRef(pack: String, element: Fix[Lang])
 
 case class TypeOptions()
 
+enum BuiltinType:
+  case Integer, Str, Bool
+
 enum Lang[+R]:
+  case Universe(options: TypeOptions)
+
   case Record(name: RecordKey, typ: R)
   case Extend(base: R, deps: R)
   case Function(domain: R, body: R)
-  case Type(options: TypeOptions)
+  case Builtin(bt: BuiltinType)
 
   case Get(key: RecordKey, up: Int)
   case Unit

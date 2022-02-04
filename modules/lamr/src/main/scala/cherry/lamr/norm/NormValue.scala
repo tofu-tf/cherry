@@ -28,26 +28,28 @@ trait NormValue:
 
   def isAbstract: Boolean = false
 
-  def apply(term: NormValue): Process[NormValue] = error(Cause.BadType(TypeCause.Function))
+  def apply(term: NormValue): Process[NormValue] = Cause.BadType(TypeCause.Function).raise
 
-  def get(key: RecordKey, up: Int): Process[NormValue] = error(Cause.BadType(TypeCause.Record))
+  def get(key: RecordKey, up: Int): Process[NormValue] = Cause.BadType(TypeCause.Record).raise
 
-  def asType: Process[NormType] = error(Cause.BadType(TypeCause.Type))
+  def asType: Process[NormType] = Cause.BadType(TypeCause.Type).raise
 
   def merge(term: NormValue): Process[NormValue] = ???
 
   def narrow(domain: NormValue): Process[NormValue] = ???
 
-  final def error(cause: Cause) = Error(cause, Some(toPartial), position).raise
+  def first = get(0, 0)
+
+  def second = get(1, 0)
 
 trait Library:
-  def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer): Process[PartialTerm]
+  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer): Process[NormValue]
 
 class LibraryPack(includes: Map[String, Library]) extends Library:
-  def resolve(context: PartialTerm, position: Position, ref: LibRef, normalizer: Normalizer) =
+  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer) =
     for
-      lib  <- Act.option(includes.get(ref.pack), Error(Cause.MissingLibrary(ref.pack), None, Some(position)))
-      term <- lib.resolve(context, position, ref, normalizer)
+      lib  <- Act.option(includes.get(ref.pack), Cause.MissingLibrary(ref.pack))
+      term <- lib.resolve(context, ref, normalizer)
     yield term
 
 end LibraryPack

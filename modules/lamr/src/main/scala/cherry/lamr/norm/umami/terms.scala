@@ -32,15 +32,14 @@ case class RecordValue(map: LayeredMap[RecordKey, NormValue]) extends NormValue:
   private def joinAll(it: IterableOnce[PartialTerm]): PartialTerm     =
     it.foldLeft[PartialTerm](Lang.Unit)((rec, set) => Lang.Merge(rec, set).fix)
 
-  override def get(key: RecordKey, up: Int): Process[NormValue]                =
-    map.get(key, up).fold(error(Cause.MissingKey(key)))(Act.pure(_))
-
+  override def get(key: RecordKey, up: Int): Process[NormValue]       =
+    Act.option(map.get(key, up), Cause.MissingKey(key))
 end RecordValue
 
 object RecordValue:
   def single(key: RecordKey, v: NormValue) = RecordValue(LayeredMap.fromVector(Vector(key -> v)))
 
-case class Closure(context: NormValue, body: PartialTerm, domain: NormValue, norm: Normalizer) extends NormValue:
+case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm: Normalizer) extends NormValue:
   def toPartial = context.toPartial >> Lang.Capture(domain.toPartial, body).fix
 
   override def apply(arg: NormValue) =
@@ -53,20 +52,19 @@ end Closure
 
 case class Merge()
 
-case object UnitValue                                                                          extends NormValue:
+case object UnitValue                                                                         extends NormValue:
   def toPartial = Lang.Unit
 
-case class IntegerValue(value: BigInt)                                                         extends NormValue:
+case class IntegerValue(value: BigInt)                                                        extends NormValue:
   def toPartial = Lang.Integer(value)
 
-case class StringValue(value: String)                                                          extends NormValue:
+case class StringValue(value: String)                                                         extends NormValue:
   def toPartial = Lang.Str(value)
 
-case class FloatValue(value: Double)                                                           extends NormValue:
+case class FloatValue(value: Double)                                                          extends NormValue:
 
   def toPartial = Lang.Float(value)
 
 case class BooleanValue(value: Boolean) extends NormValue:
 
   def toPartial = Lang.Bool(value)
-

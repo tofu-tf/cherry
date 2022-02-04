@@ -14,15 +14,14 @@ case class State(
     var position: Option[Position],
     var term: Option[PartialTerm],
     var errors: Vector[Error],
-) extends Act.Raising[Error]:
-  def error(e: => Error) = errors :+= e
+) extends Act.Raising[Cause]:
+  def error(e: => Cause) = errors :+= Error(e, term, position)
 
 case class Position(start: Long, end: Long):
   def set: Process[Unit] = Act.Action(_.position = Some(this))
 
 enum TypeCause:
   case Record, Function, Type
-
 
 enum Cause:
   case MissingLibrary(name: String)
@@ -31,13 +30,15 @@ enum Cause:
 
   case Abort(message: String)
 
+  def raise: Process[Nothing] = Act.error(this)
+
 case class Error(
     cause: Cause,
     term: Option[PartialTerm] = None,
     position: Option[Position] = None,
-):
+)
 
-  def raise: Process[Nothing] = Act.error(this)
+end Error
 
 type Process[+A] = Act[State, A]
 

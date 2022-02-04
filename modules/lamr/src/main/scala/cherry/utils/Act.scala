@@ -22,7 +22,9 @@ enum Act[-State, +Res]:
   def map2Par[S <: State, B, C](act: Act[S, B])(f: (Res, B) => C): Act[S, C] =
     Par(this, act, (x, y) => Act.pure(f(x, y)))
 
-  private def runIter(state: State): TailRec[Null | Res]                     = this match
+  def flatMap2Par[S <: State, B, C](act: Act[S, B])(f: (Res, B) => Act[S, C]): Act[S, C] = Par(this, act, f)
+
+  private def runIter(state: State): TailRec[Null | Res] = this match
     case Action(f)    => TailCalls.done(f(state))
     case Par(l, r, f) =>
       l.runIter(state).flatMap { lres =>
@@ -56,6 +58,11 @@ object Act:
   def option[E, A](oa: Option[A], err: => E): Act[Raising[E], A] =
     oa match
       case None    => error(err)
+      case Some(a) => pure(a)
+
+  def optionF[S, A](oa: Option[A], default: => Act[S, A]): Act[S, A] =
+    oa match
+      case None    => default
       case Some(a) => pure(a)
 
   def either[E, A](ea: Either[E, A]): Act[Raising[E], A] =
