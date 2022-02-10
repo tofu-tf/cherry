@@ -13,9 +13,9 @@ import basic._
 
 val term = defer(theTerm)
 
-val symbolKey = (identifier.map(RecordKey.Symbol(_)) <* whitespace).backtrack
 
-val separator = char(',').orElse(char(';')).spaced
+
+val separator = char(',').spaced
 
 val listSyntax = term.repSep0(separator).map {
   _.iterator.zipWithIndex.map { (t, i) => Lang.Set(RecordKey.Index(i), t).fix }
@@ -29,7 +29,7 @@ val symbolTerm = (symbolKey ~ ((char('=') *> whitespace *> term).?)).map {
 
 val listTerm = char('[') *> listSyntax <* char(']')
 
-val recordSyntax = term.repSep(separator).map(_.foldLeft[Fix[Lang]](Lang.Unit)(Lang.Extend(_, _).fix))
+val recordSyntax = term.repSep(separator).map(_.reduce[Fix[Lang]](Lang.Extend(_, _).fix))
 
 val recordTerm = char('(') *> recordSyntax <* char(')')
 
@@ -40,6 +40,8 @@ val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
 val fixedTerm = oneOf(List(integerTerm, recordTerm, listTerm, symbolTerm))
 
 val application = fixedTerm.repSep(whitespace).map(_.reduce(_.apply(_)))
+
+val chain = application.repSep(char(';').spaced).map(_.reduce(_.andThen(_)))
 
 val theTerm: Parser[Fix[Lang]] = application.spaced
 

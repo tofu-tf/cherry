@@ -66,7 +66,9 @@ object Lang:
         .foldLeft[Fix[G]](Unit)((acc, t) => Extend(acc, t).fix)
 
   extension [G[+r] >: Lang[r]](term: Fix[G])
-    infix def >>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
+    infix def >>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = term.andThen(next)
+
+    def andThen[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
 
     def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) >> Apply
 

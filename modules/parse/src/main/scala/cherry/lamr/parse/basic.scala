@@ -29,4 +29,6 @@ val integer = zeroInt orElse positiveInt orElse negativeInt
 
 val whitespace = charIn(' ', '\t', '\n').rep0.void
 
+val symbolKey = identifier.map(RecordKey.Symbol(_))
+
 extension [A](p: Parser[A]) def spaced: Parser[A] = p.surroundedBy(whitespace)

@@ -26,4 +26,9 @@ class TermSuite extends AnyFunSuite with Matchers:
     "(a = 1, b = 2, c = 3)" shouldParse Lang.rec(a = 1, b = 2, c = 3)
   }
 
+  test("sample application"){
+    "x z" shouldParse Lang.get("x").apply(Lang.get("z"))
+  }
+
+
 end TermSuite
