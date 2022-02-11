@@ -58,12 +58,14 @@ object Lang:
     def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
       assocs
         .map((name, t) => Set(name, t).fix)
-        .foldLeft[Fix[G]](Unit)((acc, t) => Extend(acc, t).fix)
+        .reduceOption(Merge(_, _).fix)
+        .getOrElse(Unit)
 
     def applyDynamic[G[+r] >: Lang[r]](name: "apply")(assocs: Fix[G]*): Fix[G] =
       assocs.zipWithIndex
         .map((t, i) => Set(i, t).fix)
-        .foldLeft[Fix[G]](Unit)((acc, t) => Extend(acc, t).fix)
+        .reduceOption(Merge(_, _).fix)
+        .getOrElse(Unit)
 
   extension [G[+r] >: Lang[r]](term: Fix[G])
     infix def >>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = term.andThen(next)

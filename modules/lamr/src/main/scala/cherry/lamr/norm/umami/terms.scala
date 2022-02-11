@@ -55,6 +55,7 @@ case class Merge()
 case object UnitValue                                                                         extends NormValue:
   def toPartial = Lang.Unit
 
+
 case class IntegerValue(value: BigInt)                                                        extends NormValue:
   def toPartial = Lang.Integer(value)
 

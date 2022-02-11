@@ -2,9 +2,9 @@ package cherry.lamr.parse
 
 package basic
 
-import cats.parse.Parser
-import Parser._
-import tofu.syntax.monadic._
+import cats.parse.{Parser, Parser0}
+import Parser.*
+import tofu.syntax.monadic.*
 import cherry.lamr.Lang
 import cherry.fix.Fix
 import cherry.lamr.RecordKey
@@ -27,8 +27,10 @@ val zeroInt     = char('0') as BigInt(0)
 
 val integer = zeroInt orElse positiveInt orElse negativeInt
 
-val whitespace = charIn(' ', '\t', '\n').rep0.void
+val whitespace = charIn(' ', '\t', '\n').rep0.void.backtrack
 
 val symbolKey = identifier.map(RecordKey.Symbol(_))
 
 extension [A](p: Parser[A]) def spaced: Parser[A] = p.surroundedBy(whitespace)
+
+extension [A](p: Parser0[A]) def spaced0: Parser0[A] = p.surroundedBy(whitespace)
