@@ -52,7 +52,10 @@ object Lang:
   given Conversion[scala.Int, Fix[Lang]] = Integer(_)
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
 
-  def get(key: RecordKey) = Get(key, 0)
+  object get extends Dynamic:
+    def apply(key: RecordKey) = Get(key, 0)
+
+    def selectDynamic(name: String) = Get(name, 0)
 
   object rec extends Dynamic:
     def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =

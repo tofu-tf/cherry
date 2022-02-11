@@ -1,18 +1,13 @@
 package cherry.lamr.parse
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
-import cherry.lamr.Lang
 import cherry.fix.Fix
-import org.scalactic.source.Position
-import org.scalactic.Prettifier
-import org.scalactic.Equality
+import cherry.lamr.Lang
 import cherry.lamr.parse.term.source
 
-class TermSuite extends AnyFunSuite with Matchers:
-  extension (exp: String)(using Position, Prettifier)
+class TermTests extends munit.FunSuite {
+  extension (exp: String)
     infix def shouldParse(lang: Fix[Lang]) =
-      source.parse(exp) shouldEqual Right(("", lang))
+      assertEquals(source.parse(exp), Right(("", lang)))
 
   test("unit") {
     "[]" shouldParse Lang.Unit
@@ -38,4 +33,4 @@ class TermSuite extends AnyFunSuite with Matchers:
     "x [a, b]" shouldParse Lang.get.x.apply(Lang.rec(Lang.get.a, Lang.get.b))
   }
 
-end TermSuite
+}

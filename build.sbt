@@ -10,8 +10,9 @@ val publishSettings = Vector(
 )
 
 val testDependencies = libraryDependencies ++= Vector(
-  "org.scalactic" %% "scalactic" % Version.scalaTest % Test,
+  "org.scalactic" %% "scalactic" % Version.scalaTest ,
   "org.scalatest" %% "scalatest" % Version.scalaTest % Test,
+  "org.scalameta" %% "munit" % Version.munit % Test
 )
 
 val lamrDependencies2 = libraryDependencies ++= Vector(
