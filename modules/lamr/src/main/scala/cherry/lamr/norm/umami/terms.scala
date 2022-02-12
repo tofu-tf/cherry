@@ -15,12 +15,12 @@ case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
 
   override def isAbstract = true
 
-  private def make(term: PartialTerm, tpe: Process[NormType]): Process[NormValue] = 
+  private def make(term: PartialTerm, tpe: Process[NormType]): Process[NormValue] =
     tpe.map(Abstract(term, _))
 
-  override def apply(arg: NormValue) = make(term >> arg.toPartial, tpe.applied(arg))
+  override def apply(arg: NormValue)                                              = make(term >> arg.toPartial, tpe.applied(arg))
 
-  override def get(key: RecordKey, up: Int) = make(term >> Lang.Get(key, up), tpe.got(key, up))
+  override def get(key: RecordKey, up: Int) = make(term >> Lang.GetKey(key, up), tpe.got(key, up))
 
 end Abstract
 
@@ -28,7 +28,7 @@ case class RecordValue(map: LayeredMap[RecordKey, NormValue]) extends NormValue:
   def toPartial = joinAll(map.journal.iterator.map(toRecord))
 
   private def toRecord(key: RecordKey, value: NormValue): PartialTerm =
-    Lang.Set(key, value.toPartial).fix
+    Lang.set(key, value.toPartial)
 
   private def joinAll(it: IterableOnce[PartialTerm]): PartialTerm     =
     it.foldLeft[PartialTerm](Lang.Unit)((rec, set) => Lang.Merge(rec, set).fix)

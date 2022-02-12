@@ -1,6 +1,7 @@
 package cherry.lamr
 import cherry.fix.Fix
 import scala.language.dynamics
+import com.sourcegraph.semanticdb_javac.Semanticdb.Type
 
 enum RecordKey:
   case Symbol(name: String)
@@ -26,7 +27,7 @@ enum Lang[+R]:
   case Function(domain: R, body: R)
   case Builtin(bt: BuiltinType)
 
-  case Get(key: RecordKey, up: Int)
+  case GetKey(key: RecordKey, up: Int)
   case Unit
   case Id
   case Set(key: RecordKey, term: R, options: TypeOptions)
@@ -53,20 +54,21 @@ object Lang:
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
 
   object get extends Dynamic:
-    def apply(key: RecordKey) = Get(key, 0)
+    def apply(key: RecordKey) = GetKey(key, 0)
 
-    def selectDynamic(name: String) = Get(name, 0)
+    def selectDynamic(name: String) = GetKey(name, 0)
+  def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t, TypeOptions()).fix
 
   object rec extends Dynamic:
     def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
       assocs
-        .map((name, t) => Set(name, t).fix)
+        .map((name, t) => set(name, t))
         .reduceOption(Merge(_, _).fix)
         .getOrElse(Unit)
 
     def applyDynamic[G[+r] >: Lang[r]](name: "apply")(assocs: Fix[G]*): Fix[G] =
       assocs.zipWithIndex
-        .map((t, i) => Set(i, t).fix)
+        .map((t, i) => set(i, t))
         .reduceOption(Merge(_, _).fix)
         .getOrElse(Unit)
 
@@ -76,5 +78,7 @@ object Lang:
     def andThen[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
 
     def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) >> Apply
+
+    def merge[H[+r] >: G[r]](ext: Fix[H]): Fix[H] = Merge(term, ext).fix
 
 type LangVal = Fix[Lang]

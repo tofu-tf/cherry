@@ -72,9 +72,9 @@ class UmamiNormalizer(library: Library) extends Normalizer:
 
     case Lang.Id => Act.pure(context)
 
-    case Lang.Set(k, t) => for tnorm <- bigStep(t, context) yield RecordValue.single(k, tnorm)
+    case Lang.Set(k, t, opts) => for tnorm <- bigStep(t, context) yield RecordValue.single(k, tnorm)
 
-    case Lang.Get(k, up) => context.get(k, up)
+    case Lang.GetKey(k, up) => context.get(k, up)
 
     case Lang.AndThen(tl, tr) =>
       for
