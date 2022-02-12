@@ -14,7 +14,10 @@ object RecordKey:
 
 case class LibRef(pack: String, element: Fix[Lang])
 
-case class TypeOptions()
+case class TypeOptions(
+    infer: Boolean = false,
+    erase: Boolean = false,
+)
 
 enum BuiltinType:
   case Integer, Str, Bool
@@ -57,6 +60,7 @@ object Lang:
     def apply(key: RecordKey) = GetKey(key, 0)
 
     def selectDynamic(name: String) = GetKey(name, 0)
+    
   def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t, TypeOptions()).fix
 
   object rec extends Dynamic:

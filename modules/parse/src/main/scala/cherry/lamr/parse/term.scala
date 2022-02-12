@@ -13,26 +13,25 @@ import basic._
 import basic.given
 import types.typeTerm
 
-
 val term: Parser[Fix[Lang]] = defer(theTerm)
 
 val separator = char(',')
 
 val listSyntax = term.spaced
   .repSep0(separator)
-  .map(_.iterator.zipWithIndex.map { (t, i) => Lang.Set(RecordKey.Index(i), t).fix })
+  .map(_.iterator.zipWithIndex.map { (t, i) => Lang.set(RecordKey.Index(i), t) })
   .map(mergeAll)
 
 val symbolTerm: Parser[Fix[Lang]] =
   ((symbolKey <* whitespace) ~ (char('=') *> whitespace *> term).?).map {
-  case (key, None)    => Lang.Get(key, 0)
-  case (key, Some(t)) => Lang.Set(key, t).fix
-}
+    case (key, None)    => Lang.get(key)
+    case (key, Some(t)) => Lang.set(key, t)
+  }
 
 def mergeAll(terms: IterableOnce[Fix[Lang]]): Fix[Lang] =
   terms.iterator.reduceOption(Lang.Merge(_, _).fix).getOrElse(Lang.Unit)
 
-val assignment = (symbolKey, char('=').spaced *> term).mapN((key, t) => Lang.Set(key, t).fix)
+val assignment = (symbolKey, char('=').spaced *> term).mapN((key, t) => Lang.set(key, t))
 
 val recordSyntax = assignment.spaced.repSep0(separator).map(mergeAll)
 
