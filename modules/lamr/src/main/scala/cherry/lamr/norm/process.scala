@@ -11,6 +11,7 @@ import cherry.lamr.RecordKey
 case class State(
     var symbolCount: Long,
     var inequasions: InequasionSystem[PartialTerm],
+    var symbols: Map[Long, RecordKey],
     var position: Option[Position],
     var term: Option[PartialTerm],
     var errors: Vector[Error],
@@ -27,6 +28,7 @@ enum Cause:
   case MissingLibrary(name: String)
   case BadType(expected: TypeCause)
   case MissingKey(key: RecordKey)
+  case UnrelatedValue
 
   case Abort(message: String)
 
@@ -42,9 +44,10 @@ end Error
 
 type Process[+A] = Act[State, A]
 
-def newSymbol(name: String): Process[Symbol] =
+def newSymbol[R](name: String, tpe: R): Process[Symbol[R]] =
   Act.action { state =>
     state.symbolCount += 1
-    val symbol = Symbol(state.symbolCount, name)
-    symbol
+    val id = state.symbolCount
+    state.symbols += id -> name
+    Symbol(id, name, tpe)
   }

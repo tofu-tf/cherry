@@ -29,7 +29,7 @@ enum Lang[+R]:
   case Get(key: RecordKey, up: Int)
   case Unit
   case Id
-  case Set(key: RecordKey, term: R)
+  case Set(key: RecordKey, term: R, options: TypeOptions)
   case Merge(base: R, deps: R)
 
   case Narrow(term: R, typ: R)

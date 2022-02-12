@@ -4,7 +4,7 @@ enum Sign:
   case Le, Ge, Eq
 
 case class Inequasion[T](
-    symbol: Symbol,
+    symbol: Long,
     sign: Sign,
     term: T,
 )

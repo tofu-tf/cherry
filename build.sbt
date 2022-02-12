@@ -25,7 +25,8 @@ val parseDependencies2 = libraryDependencies ++= Vector(
 ).map(_.cross(CrossVersion.for3Use2_13))
 
 val compilerSettints = scalacOptions ++= Vector(
-  "-Yexplicit-nulls"
+  "-Yexplicit-nulls",
+  "-encoding", "utf-8",
 )
 
 val defaultSettings = publishSettings ++ testDependencies ++ compilerSettints

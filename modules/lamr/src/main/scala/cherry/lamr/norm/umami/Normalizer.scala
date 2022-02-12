@@ -7,8 +7,13 @@ import cats.syntax.parallel.given
 import tofu.syntax.monadic.given
 import cherry.lamr.LibRef
 class UmamiNormalizer(library: Library) extends Normalizer:
+  def bigTypeStep(term: PartialTerm, context: NormValue): Process[NormType] =
+    bigStep(term, context).flatMap(_.asType)
+
   def bigStep(term: PartialTerm, context: NormValue): Process[NormValue] = term.unpack match
-    case Symbol(id, key) => Act.pure(Abstract(Symbol(id, key)))
+    case s @ Symbol(id, key, term) =>
+      for tpe <- bigTypeStep(term, context)
+      yield Abstract(s, tpe)
 
     case Lang.External(ref) => library.resolve(context, ref, this)
 
@@ -78,4 +83,4 @@ class UmamiNormalizer(library: Library) extends Normalizer:
       yield right
 
     case Lang.Narrow(t, domain) =>
-      bigStep(t, context).flatMap2Par(bigStep(domain, context))(_.narrow(_))
+      bigStep(t, context).flatMap2Par(bigStep(domain, context).flatMap(_.asType))(_.narrow(_))

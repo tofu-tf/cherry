@@ -10,16 +10,17 @@ import scala.collection.immutable.IntMap
 import cherry.utils.LayeredMap
 import cherry.lamr.TypeOptions
 
-case class Abstract(term: PartialTerm, override val position: Option[Position] = None) extends NormValue:
+case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
   def toPartial = term
 
   override def isAbstract = true
 
-  def make(term: PartialTerm): Process[NormValue] = Act.pure(Abstract(term))
+  private def make(term: PartialTerm, tpe: Process[NormType]): Process[NormValue] = 
+    tpe.map(Abstract(term, _))
 
-  override def apply(arg: NormValue) = make(term >> arg.toPartial)
+  override def apply(arg: NormValue) = make(term >> arg.toPartial, tpe.applied(arg))
 
-  override def get(key: RecordKey, up: Int) = make(term >> Lang.Get(key, up))
+  override def get(key: RecordKey, up: Int) = make(term >> Lang.Get(key, up), tpe.got(key, up))
 
 end Abstract
 
@@ -37,7 +38,9 @@ case class RecordValue(map: LayeredMap[RecordKey, NormValue]) extends NormValue:
 end RecordValue
 
 object RecordValue:
-  def single(key: RecordKey, v: NormValue) = RecordValue(LayeredMap.fromVector(Vector(key -> v)))
+  def single(key: RecordKey, v: NormValue) = fromVector(Vector(key -> v))
+
+  def fromVector(kvs: Vector[(RecordKey, NormValue)]) = RecordValue(LayeredMap.fromVector(kvs))
 
 case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm: Normalizer) extends NormValue:
   def toPartial = context.toPartial >> Lang.Capture(domain.toPartial, body).fix
@@ -50,7 +53,13 @@ case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm
     yield res
 end Closure
 
-case class Merge()
+case class Merge(base: NormValue, ext: NormValue)                                             extends NormValue:
+  def toPartial = Lang.Extend(base.toPartial, ext.toPartial).fix
+
+  override def merge(ext2: NormValue) = ext.merge(ext2).flatMap(base.merge)
+
+case class Narrow(base: NormValue, expect: NormType)                                          extends NormValue:
+  def toPartial = Lang.Narrow(base.toPartial, expect.toPartial).fix
 
 case object UnitValue                                                                         extends NormValue:
   def toPartial = Lang.Unit

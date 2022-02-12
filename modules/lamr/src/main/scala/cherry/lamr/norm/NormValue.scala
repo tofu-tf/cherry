@@ -1,17 +1,16 @@
 package cherry.lamr.norm
 
 import cherry.lamr.{Lang, LibRef}
-
 import cherry.fix.Fix
-import tofu.syntax._
-import cats.syntax.show._
+import tofu.syntax.*
+import cats.syntax.show.*
 import cherry.utils.Act
 import cherry.lamr.RecordKey
-import cherry.lamr.norm.umami.NormType
+import cherry.lamr.norm.umami.{Narrow, NormType}
 
-case class Symbol(id: Long, key: RecordKey)
+case class Symbol[+T](id: Long, key: RecordKey, tpe: T)
 
-type Partial[+A] = Lang[A] | Symbol
+type Partial[+A] = Lang[A] | Symbol[A]
 
 type PartialTerm = Fix[Partial]
 trait Normalizer:
@@ -34,9 +33,9 @@ trait NormValue:
 
   def asType: Process[NormType] = Cause.BadType(TypeCause.Type).raise
 
-  def merge(term: NormValue): Process[NormValue] = ???
+  def merge(term: NormValue): Process[NormValue] = Act.pure(umami.Merge(this, term))
 
-  def narrow(domain: NormValue): Process[NormValue] = ???
+  def narrow(domain: NormType): Process[NormValue] = Act.error(Cause.UnrelatedValue)
 
   def first = get(0, 0)
 

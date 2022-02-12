@@ -16,7 +16,3 @@ class TestTest extends AnyFunSuite {
 case class A(s: String) derives TofuDisplay
 
 case class B(x: String, y: List[Int] = Nil, as: List[A] = Nil, b: Option[B] = None) derives TofuDisplay
-
-// @main def testa() =
-//   println(parseId.parse("x123"))
-
