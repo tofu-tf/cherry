@@ -33,4 +33,15 @@ class TermTests extends munit.FunSuite {
     "x [a, b]" shouldParse Lang.get.x.apply(Lang.rec(Lang.get.a, Lang.get.b))
   }
 
+  test("very complex application") {
+    "foo [ 3, 4 , 5 ] (a = 2, b = 3)" shouldParse Lang.get.foo.apply(Lang.rec(3, 4, 5)).apply(Lang.rec(a = 2, b = 3))
+  }
+
+  test("complex chaning") {
+    "x a ; z z ; z z" shouldParse Lang.get.x
+      .apply(Lang.get.a)
+      .andThen(Lang.get.z.apply(Lang.get.z))
+      .andThen(Lang.get.z.apply(Lang.get.z))
+  }
+
 }

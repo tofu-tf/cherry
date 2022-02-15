@@ -40,15 +40,3 @@ trait NormValue:
   def first = get(0, 0)
 
   def second = get(1, 0)
-
-trait Library:
-  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer): Process[NormValue]
-
-class LibraryPack(includes: Map[String, Library]) extends Library:
-  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer) =
-    for
-      lib  <- Act.option(includes.get(ref.pack), Cause.MissingLibrary(ref.pack))
-      term <- lib.resolve(context, ref, normalizer)
-    yield term
-
-end LibraryPack

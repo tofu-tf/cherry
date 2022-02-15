@@ -7,9 +7,9 @@ import scala.deriving.Mirror
 import scala.CanEqual.derived
 import tofu.common.Display
 
-class TestTest extends AnyFunSuite {
+class TestTest extends munit.FunSuite {
   test("lol") {
-    assert("kek" === "kek")
+    assertEquals("kek","kek")
   }
 }
 

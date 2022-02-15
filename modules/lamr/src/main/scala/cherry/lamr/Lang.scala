@@ -1,7 +1,6 @@
 package cherry.lamr
 import cherry.fix.Fix
 import scala.language.dynamics
-import com.sourcegraph.semanticdb_javac.Semanticdb.Type
 
 enum RecordKey:
   case Symbol(name: String)
