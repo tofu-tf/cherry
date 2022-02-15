@@ -24,17 +24,20 @@ enum Act[-State, +Res]:
 
   def flatMap2Par[S <: State, B, C](act: Act[S, B])(f: (Res, B) => Act[S, C]): Act[S, C] = Par(this, act, f)
 
-  private def runIter(state: State): TailRec[Null | Res] = this match
-    case Action(f)    => TailCalls.done(f(state))
-    case Par(l, r, f) =>
-      l.runIter(state).flatMap { lres =>
-        r.runIter(state).flatMap { rres =>
-          if lres != null && rres != null then f(lres, rres).runIter(state) else Act.stop
-        }
-      }
+  private def runIter(state: State, maxSteps: Long = -1): TailRec[Null | Res] =
+    if maxSteps == 0 then throw IllegalStateException("maximum steps exhausted")
+    else
+      this match
+        case Action(f)    => TailCalls.done(f(state))
+        case Par(l, r, f) =>
+          l.runIter(state, maxSteps - 1).flatMap { lres =>
+            r.runIter(state, maxSteps - 1).flatMap { rres =>
+              if lres != null && rres != null then f(lres, rres).runIter(state, maxSteps - 1) else Act.stop
+            }
+          }
 
-  def run(init: State): Option[Res] =
-    val res = runIter(init).result
+  def run(init: State, maxSteps: Long = -1): Option[Res] =
+    val res = runIter(init, maxSteps).result
     if res == null then None else Some(res)
 end Act
 
@@ -45,6 +48,8 @@ object Act:
   val unit: Act[Any, Unit]    = pure(())
 
   def pure[A](a: A): Act[Any, A] = Act.Action(_ => a)
+
+  def defer[S, A](fa: => Act[S, A]) = unit.flatMap(_ => fa)
 
   def get[S]: Act[S, S] = Action(x => x)
 

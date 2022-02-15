@@ -1,13 +1,13 @@
 package cherry.lamr.norm
 
-import tofu.data.{CalcT, CalcM}
+import tofu.data.{CalcM, CalcT}
 import cats.Parallel
 import cats.arrow.FunctionK
 import cats.Applicative
 import cats.syntax.applicative
+import cherry.fix.Fix.Fix
 import cherry.utils.Act
-import cherry.lamr.RecordKey
-import cherry.lamr.LibRef
+import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 
 case class State(
     var symbolCount: Long = 0,
@@ -24,12 +24,14 @@ case class Position(start: Long, end: Long):
 
 enum TypeCause:
   case Record, Function, Type
+  case Builtin(bt: BuiltinType)
 
 enum Cause:
   case MissingLibrary(name: String)
   case MissingRef(ref: LibRef)
   case BadType(expected: TypeCause)
   case MissingKey(key: RecordKey)
+  case BadRef(ref: LibRef)
   case UnrelatedValue
 
   case Abort(message: String)

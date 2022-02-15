@@ -17,7 +17,9 @@ trait NormType extends NormValue :
 
   def got(key: RecordKey, up: Int): Process[NormType] = Act.error(Cause.BadType(TypeCause.Record))
 
-case class BuiltinNormType(bt: BuiltinType) extends NormType :
+  override def asType: Process[NormType] = Act.pure(this)
+
+case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None) extends NormType :
   override def toPartial: PartialTerm = Lang.Builtin(bt)
 
 case class UniverseType(options: TypeOptions) extends NormType :

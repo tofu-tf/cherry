@@ -1,5 +1,7 @@
 package cherry.lamr
 import cherry.fix.Fix
+
+import scala.annotation.targetName
 import scala.language.dynamics
 
 enum RecordKey:
@@ -19,7 +21,7 @@ case class TypeOptions(
 )
 
 enum BuiltinType:
-  case Integer, Str, Bool
+  case Integer, Float, Str, Bool, Any
 
 enum Lang[+R]:
   case Universe(options: TypeOptions)
@@ -58,8 +60,10 @@ object Lang:
   object get extends Dynamic:
     def apply(key: RecordKey) = GetKey(key, 0)
 
+    def unapply(key: GetKey[Any]): Option[RecordKey] = Option.when(key.up == 0)(key.key)
+
     def selectDynamic(name: String) = GetKey(name, 0)
-    
+
   def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t, TypeOptions()).fix
 
   object rec extends Dynamic:
@@ -76,11 +80,10 @@ object Lang:
         .getOrElse(Unit)
 
   extension [G[+r] >: Lang[r]](term: Fix[G])
-    infix def >>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = term.andThen(next)
+    @targetName("andThen")
+    infix def |>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
 
-    def andThen[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
-
-    def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) >> Apply
+    def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) |> Apply
 
     def merge[H[+r] >: G[r]](ext: Fix[H]): Fix[H] = Merge(term, ext).fix
 

@@ -1,16 +1,20 @@
 package cherry.lamr.norm
 package umami
 
-import cherry.utils.Act
-import cherry.lamr.Lang
 import cats.syntax.parallel.given
+import cherry.lamr.{Lang, LibRef}
+import cherry.utils.Act
 import tofu.syntax.monadic.given
-import cherry.lamr.LibRef
-class UmamiNormalizer(library: Library) extends Normalizer:
-  def bigTypeStep(term: PartialTerm, context: NormValue): Process[NormType] =
-    bigStep(term, context).flatMap(_.asType)
+class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
+    extends Normalizer:
 
-  def bigStep(term: PartialTerm, context: NormValue): Process[NormValue] = term.unpack match
+  def normalize(term: PartialTerm, context: NormValue): Process[NormValue] =
+    Act.action(st => dbg(term, context, st)) >> bigStep(term, context)
+
+  private def bigTypeStep(term: PartialTerm, context: NormValue): Process[NormType] =
+      normalize(term, context).flatMap(_.asType)
+
+  private def bigStep(term: PartialTerm, context: NormValue): Process[NormValue]    = term.unpack match
     case s @ Symbol(id, key, term) =>
       for tpe <- bigTypeStep(term, context)
       yield Abstract(s, tpe)
@@ -23,35 +27,35 @@ class UmamiNormalizer(library: Library) extends Normalizer:
 
     case Lang.Extend(tb, te) =>
       for
-        baseNorm <- bigStep(tb, context)
+        baseNorm <- normalize(tb, context)
         baseType <- baseNorm.asType
         absBase  <- baseType.asAbstract
         extCtx   <- context.merge(absBase)
-        extNorm  <- bigStep(te, extCtx)
+        extNorm  <- normalize(te, extCtx)
         extType  <- extNorm.asType
       yield ExtendType(baseType, extType)
 
     case Lang.Function(domain, body) =>
       for
-        domNorm  <- bigStep(domain, context)
+        domNorm  <- normalize(domain, context)
         domType  <- domNorm.asType
         domTerm  <- domType.asAbstract
         extCtx   <- context.merge(domTerm)
-        bodyNorm <- bigStep(body, extCtx)
+        bodyNorm <- normalize(body, extCtx)
         bodyType <- bodyNorm.asType
       yield FunctionType(domType, bodyType)
 
     case Lang.Merge(base, ext) =>
       for
-        baseNorm <- bigStep(term, context)
+        baseNorm <- normalize(base, context)
         extCtx   <- context.merge(baseNorm)
-        extNorm  <- bigStep(ext, extCtx)
+        extNorm  <- normalize(ext, extCtx)
         result   <- baseNorm.merge(extNorm)
       yield result
 
     case Lang.Capture(domain, body) =>
       for
-        domNorm <- bigStep(domain, context)
+        domNorm <- normalize(domain, context)
         domType <- domNorm.asType
       yield Closure(context, body, domType, this)
 
@@ -60,7 +64,7 @@ class UmamiNormalizer(library: Library) extends Normalizer:
 
     case Lang.Record(k, t) =>
       for
-        tnorm <- bigStep(t, context)
+        tnorm <- normalize(t, context)
         ttype <- tnorm.asType
       yield RecordType.single(k, ttype)
 
@@ -72,15 +76,15 @@ class UmamiNormalizer(library: Library) extends Normalizer:
 
     case Lang.Id => Act.pure(context)
 
-    case Lang.Set(k, t, opts) => for tnorm <- bigStep(t, context) yield RecordValue.single(k, tnorm)
+    case Lang.Set(k, t, opts) => for tnorm <- normalize(t, context) yield RecordValue.single(k, tnorm)
 
     case Lang.GetKey(k, up) => context.get(k, up)
 
     case Lang.AndThen(tl, tr) =>
       for
-        left  <- bigStep(tl, context)
-        right <- bigStep(tr, left)
+        left  <- normalize(tl, context)
+        right <- normalize(tr, left)
       yield right
 
     case Lang.Narrow(t, domain) =>
-      bigStep(t, context).flatMap2Par(bigStep(domain, context).flatMap(_.asType))(_.narrow(_))
+      normalize(t, context).flatMap2Par(normalize(domain, context).flatMap(_.asType))(_.narrow(_))
