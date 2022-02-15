@@ -7,14 +7,15 @@ import cats.Applicative
 import cats.syntax.applicative
 import cherry.utils.Act
 import cherry.lamr.RecordKey
+import cherry.lamr.LibRef
 
 case class State(
-    var symbolCount: Long,
-    var inequasions: InequasionSystem[PartialTerm],
-    var symbols: Map[Long, RecordKey],
-    var position: Option[Position],
-    var term: Option[PartialTerm],
-    var errors: Vector[Error],
+    var symbolCount: Long = 0,
+    var inequasions: InequasionSystem[PartialTerm] = DummyIneqSystem(),
+    var symbols: Map[Long, RecordKey] = Map.empty,
+    var position: Option[Position] = None,
+    var term: Option[PartialTerm] = None,
+    var errors: Vector[Error] = Vector.empty,
 ) extends Act.Raising[Cause]:
   def error(e: => Cause) = errors :+= Error(e, term, position)
 
@@ -26,6 +27,7 @@ enum TypeCause:
 
 enum Cause:
   case MissingLibrary(name: String)
+  case MissingRef(ref: LibRef)
   case BadType(expected: TypeCause)
   case MissingKey(key: RecordKey)
   case UnrelatedValue

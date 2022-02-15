@@ -43,3 +43,9 @@ lazy val parse = project
   .settings(defaultSettings)
   .settings(parseDependencies2)
   .dependsOn(lamr)
+
+lazy val tests = project
+  .in(modules / "tests")
+  .settings(publish / skip := true)
+  .settings(defaultSettings)
+  .dependsOn(lamr, parse)
