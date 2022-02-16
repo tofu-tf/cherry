@@ -20,13 +20,18 @@ case class TypeOptions(
     erase: Boolean = false,
 )
 
+object TypeOptions:
+  val Default = TypeOptions()
+
 enum BuiltinType:
   case Integer, Float, Str, Bool, Any
+
+  given Conversion[BuiltinType, Lang[Nothing]] = Lang.Builtin(_)
 
 enum Lang[+R]:
   case Universe(options: TypeOptions)
 
-  case Record(name: RecordKey, typ: R)
+  case Record(name: RecordKey, typ: R, options: TypeOptions)
   case Extend(base: R, deps: R)
   case Function(domain: R, body: R)
   case Builtin(bt: BuiltinType)
@@ -34,7 +39,7 @@ enum Lang[+R]:
   case GetKey(key: RecordKey, up: Int)
   case Unit
   case Id
-  case Set(key: RecordKey, term: R, options: TypeOptions)
+  case Set(key: RecordKey, term: R)
   case Merge(base: R, deps: R)
 
   case Narrow(term: R, typ: R)
@@ -64,7 +69,7 @@ object Lang:
 
     def selectDynamic(name: String) = GetKey(name, 0)
 
-  def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t, TypeOptions()).fix
+  def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t).fix
 
   object rec extends Dynamic:
     def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
@@ -79,6 +84,17 @@ object Lang:
         .reduceOption(Merge(_, _).fix)
         .getOrElse(Unit)
 
+  object recT extends Dynamic:
+    def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
+      assocs
+        .map((name, t) => Record(name, t, TypeOptions()).fix)
+        .reduceOption(Extend(_, _).fix)
+        .getOrElse(Unit)
+
+  class Call[G[+r] >: Lang[r]](term: Fix[G]) extends Dynamic:
+    def applyDynamicNamed[H[+r] >: G[r]](name: "apply")(assocs: (String, Fix[H])*): Fix[H] =
+      term.apply(rec.applyDynamicNamed("apply")(assocs*))
+
   extension [G[+r] >: Lang[r]](term: Fix[G])
     @targetName("andThen")
     infix def |>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
@@ -86,5 +102,7 @@ object Lang:
     def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) |> Apply
 
     def merge[H[+r] >: G[r]](ext: Fix[H]): Fix[H] = Merge(term, ext).fix
+
+    def call: Call[G] = Call(term)
 
 type LangVal = Fix[Lang]

@@ -1,9 +1,8 @@
 package cherry.lamr
 
 import cherry.lamr.norm.umami.{RecordValue, UmamiNormalizer, UnitValue}
-import cherry.lamr.norm.{BuiltinLibrary, Cause, NormValue, Normalizer, State}
+import cherry.lamr.norm.{BuiltinLibrary, Cause, Error, NormValue, Normalizer, PartialTerm, State}
 import cherry.fix.Fix
-import cherry.lamr.norm.PartialTerm
 import cherry.lamr.norm.ints.IntsLibrary
 import munit.Clue
 
@@ -12,12 +11,14 @@ class NormTest extends munit.FunSuite:
 
   val normalizer: Normalizer = UmamiNormalizer(BuiltinLibrary)
 
+  def errClues(err: Error): IArray[Clue[_]] = IArray(err.cause, err.value)
+
   extension (t: Fix[Lang])
     infix def shouldNorm(to: Fix[Lang]) =
-      val state = State()
-      val init  = RecordValue.from(RecordKey.Symbol("ints") -> IntsLibrary)
-      val res   = normalizer.normalize(t, init).map(_.toPartial).run(state, maxSteps = 1000)
-      assert(res.isDefined, clue = clues("errors during calculation" +: state.errors.map(_.cause: Clue[Cause])*))
+      val state   = State()
+      val res     = normalizer.normalize(t, BuiltinLibrary).map(_.viewPartial(BuiltinLibrary)).run(state, maxSteps = 1000)
+      val message = "errors during calculation"
+      assert(res.isDefined, clue = clues((message +: state.errors.flatMap(errClues))*))
       assertEquals(res.get, to)
 
   test("int norm is same") {
@@ -39,8 +40,29 @@ class NormTest extends munit.FunSuite:
     constLam(Lang.Integer(2)) shouldNorm Lang.Integer(1)
   }
 
+  val intPlus = Lang.get.ints |> Lang.get.plus
+
   test("plus application") {
-    val sum = (Lang.get("ints") |> Lang.get("plus"))(Lang.rec(Lang.Integer(1), Lang.Integer(2)))
+    val sum = intPlus(Lang.rec(Lang.Integer(1), Lang.Integer(2)))
 
     sum shouldNorm Lang.Integer(3)
   }
+
+  val plusOne = Lang.Capture(Lang.recT(x = intType), intPlus(Lang.rec(Lang.get.x, Lang.Integer(1)))).fix
+
+  test("int lambda application") {
+    plusOne.call(x = Lang.Integer(4)) shouldNorm Lang.Integer(5)
+  }
+
+  val plusCurried = Lang
+    .Capture(
+      Lang.recT(x = intType),
+      Lang.Capture(Lang.recT(y = intType), intPlus(Lang.rec(Lang.get.x, Lang.get.y))).fix
+    )
+    .fix
+
+  test("curried lambda application") {
+    plusCurried.call(x = Lang.Integer(6)).call(y = Lang.Integer(-4)) shouldNorm Lang.Integer(2)
+  }
+
+

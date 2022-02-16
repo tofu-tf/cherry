@@ -1,9 +1,10 @@
 package cherry.lamr.norm
 
 import cherry.lamr.{Lang, LibRef, RecordKey}
-import cherry.utils.Act
+import cherry.utils.{Act, LayeredMap}
 import cats.kernel.Monoid
 import cherry.lamr.norm.ints.IntsLibrary
+import cherry.lamr.norm.umami.{RecordValue, RecordValueBase}
 
 trait Library:
   def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer): Process[NormValue]
@@ -17,14 +18,15 @@ class LibraryPack(includes: Map[String, Library]) extends Library:
 
 end LibraryPack
 
-object BuiltinLibrary
-    extends LibraryPack(
-      Map(
-        "ints" -> IntsLibrary
-      )
-    )
+private def builtins          = Vector[NameResolutionLibrary](IntsLibrary)
+private def builtinMap        = builtins.iterator.map(bi => bi.name -> bi).toMap
+private def builtinLayeredMap = LayeredMap.fromVector(builtins.map(bi => (bi.name: RecordKey) -> bi))
 
-trait NameResolutionLibrary(name: String) extends Library with NormValue:
+object BuiltinLibrary extends LibraryPack(builtinMap) with RecordValueBase:
+  val map = builtinLayeredMap
+
+
+trait NameResolutionLibrary(val name: String) extends Library with NormValue:
 
   override def toPartial: PartialTerm = Lang.External(LibRef(name, Lang.get(0)))
 

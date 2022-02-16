@@ -6,6 +6,7 @@ import cats.arrow.FunctionK
 import cats.Applicative
 import cats.syntax.applicative
 import cherry.fix.Fix.Fix
+import cherry.lamr.norm.umami.NormType
 import cherry.utils.Act
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 
@@ -14,10 +15,11 @@ case class State(
     var inequasions: InequasionSystem[PartialTerm] = DummyIneqSystem(),
     var symbols: Map[Long, RecordKey] = Map.empty,
     var position: Option[Position] = None,
+    var value: Option[NormValue] = None,
     var term: Option[PartialTerm] = None,
     var errors: Vector[Error] = Vector.empty,
 ) extends Act.Raising[Cause]:
-  def error(e: => Cause) = errors :+= Error(e, term, position)
+  def error(e: => Cause) = errors :+= Error(e, value, term, position)
 
 case class Position(start: Long, end: Long):
   def set: Process[Unit] = Act.Action(_.position = Some(this))
@@ -32,7 +34,7 @@ enum Cause:
   case BadType(expected: TypeCause)
   case MissingKey(key: RecordKey)
   case BadRef(ref: LibRef)
-  case UnrelatedValue
+  case UnrelatedValue(t: NormType)
 
   case Abort(message: String)
 
@@ -40,6 +42,7 @@ enum Cause:
 
 case class Error(
     cause: Cause,
+    value: Option[NormValue] = None,
     term: Option[PartialTerm] = None,
     position: Option[Position] = None,
 )

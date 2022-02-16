@@ -1,9 +1,8 @@
 package cherry.utils
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, targetName}
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
-
 import cats.arrow.FunctionK
 import cats.syntax.parallel.given
 import cats.{Applicative, Eval, Monad, Parallel, StackSafeMonad}
@@ -24,6 +23,9 @@ enum Act[-State, +Res]:
 
   def flatMap2Par[S <: State, B, C](act: Act[S, B])(f: (Res, B) => Act[S, C]): Act[S, C] = Par(this, act, f)
 
+  @targetName("followedBy")
+  infix def *>[S <: State, B](act: => Act[S, B]): Act[S, B] = flatMap(_ => act)
+
   private def runIter(state: State, maxSteps: Long = -1): TailRec[Null | Res] =
     if maxSteps == 0 then throw IllegalStateException("maximum steps exhausted")
     else
@@ -41,6 +43,12 @@ enum Act[-State, +Res]:
     if res == null then None else Some(res)
 end Act
 
+trait ErrorCtx[S]:
+  def apply(s: S): Unit
+
+object ErrorCtx:
+  given [S]: ErrorCtx[S] = _ => ()
+
 object Act:
   private val stop: TailRec[Null] = TailCalls.done(null)
 
@@ -55,12 +63,13 @@ object Act:
 
   def action[S, A](f: S => A | Null): Act[S, A] = Action(f)
 
-  def error[E](e: => E): Act[Raising[E], Nothing] = Action { s =>
+  def error[S <: Raising[E], E](e: => E)(using ctx: ErrorCtx[S]): Act[S, Nothing] = Action { s =>
+    ctx(s)
     s.error(e)
     null
   }
 
-  def option[E, A](oa: Option[A], err: => E): Act[Raising[E], A] =
+  def option[S <: Raising[E]: ErrorCtx, E, A](oa: Option[A], err: => E): Act[S, A] =
     oa match
       case None    => error(err)
       case Some(a) => pure(a)
@@ -70,7 +79,7 @@ object Act:
       case None    => default
       case Some(a) => pure(a)
 
-  def either[E, A](ea: Either[E, A]): Act[Raising[E], A] =
+  def either[S <: Raising[E]: ErrorCtx, E, A](ea: Either[E, A]): Act[S, A] =
     ea match
       case Left(e)  => error(e)
       case Right(a) => pure(a)

@@ -25,8 +25,11 @@ val builtin = char('$') *> builtinType.map(Lang.Builtin(_))
 
 val recordFieldtype = (symbolKey, typeSeparator.spaced, term).tupled
 
-val recordType = (char('{') *> recordFieldtype.repSep(char(',').spaced).spaced <* char('}')).map(ts =>
-  ts.map((name, _, t) => Lang.Record(name, t).fix).reduce(Lang.Extend(_, _).fix)
+val recordType = (char('{') *> recordFieldtype.repSep0(char(',').spaced).spaced0 <* char('}')).map(ts =>
+  ts.iterator
+    .map((name, opts, t) => Lang.Record(name, t, opts).fix)
+    .reduceOption(Lang.Extend(_, _).fix)
+    .getOrElse(Lang.Builtin(BuiltinType.Any))
 )
 
 val typeTerm = Parser.oneOf(List(builtin, recordType))

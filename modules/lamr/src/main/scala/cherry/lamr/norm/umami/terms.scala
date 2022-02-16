@@ -3,12 +3,14 @@ package umami
 
 import cherry.fix.Fix
 import cherry.lamr.{BuiltinType, Lang, RecordKey, TypeOptions}
-import cherry.utils.Act
+import cherry.utils.{Act, ErrorCtx, LayeredMap}
 
 import scala.collection.immutable.TreeMap
 import scala.collection.immutable.IntMap
-import cherry.utils.LayeredMap
 import cherry.lamr.norm.umami.RecordValue.fromVector
+import cats.syntax.traverseFilter.given
+import tofu.syntax.collections.given
+import tofu.syntax.foption.given
 
 case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
   def toPartial = term
@@ -26,22 +28,40 @@ case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
 
 end Abstract
 
-case class RecordValue(map: LayeredMap[RecordKey, NormValue]) extends NormValue:
+trait RecordValueBase extends NormValue:
+  def map: LayeredMap[RecordKey, NormValue]
+
   def toPartial = joinAll(map.journal.iterator.map(toRecord))
 
   private def toRecord(key: RecordKey, value: NormValue): PartialTerm =
     Lang.set(key, value.toPartial)
 
   private def joinAll(it: IterableOnce[PartialTerm]): PartialTerm     =
-    it.iterator.foldLeft[PartialTerm](Lang.Unit)((rec, set) => Lang.Merge(rec, set).fix)
+    it.iterator.reduceOption((rec, set) => Lang.Merge(rec, set).fix).getOrElse(Lang.Unit)
 
   override def merge(term: NormValue): Process[NormValue]             = term match
-    case RecordValue(extMap) => Act.pure(fromVector(map.journal ++ extMap.journal))
-    case _                   => super.merge(term)
+    case ext: RecordValueBase => Act.pure(fromVector(map.journal ++ ext.map.journal))
+    case _                    => super.merge(term)
 
   override def get(key: RecordKey, up: Int): Process[NormValue]       =
+    val z = summon[ErrorCtx[State]]
     Act.option(map.get(key, up), Cause.MissingKey(key))
-end RecordValue
+
+  protected def narrowField(
+      domainMap: LayeredMap[RecordKey, NormType]
+  )(name: RecordKey, fieldValue: NormValue): Process[Option[(RecordKey, NormValue)]] =
+    domainMap.get(name, 0).traverse(fieldValue.narrow).mapIn(name -> _)
+
+  override def narrow(domain: NormType): Process[NormValue]           =
+    for
+      ts  <- domain.fieldTypes
+      dmap = LayeredMap.fromVector(ts)
+      vs  <- map.journal.traverseFilter(narrowField(dmap))
+    yield RecordValue.fromVector(vs)
+
+end RecordValueBase
+
+case class RecordValue(map: LayeredMap[RecordKey, NormValue]) extends RecordValueBase
 
 object RecordValue:
   def single(key: RecordKey, v: NormValue) = fromVector(Vector(key -> v))
@@ -51,15 +71,17 @@ object RecordValue:
   def from(kvs: (RecordKey, NormValue)*) = fromVector(kvs.toVector)
 
 case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm: Normalizer) extends NormValue:
-  def toPartial                      =
-    val func = Lang.Capture(domain.toPartial, body).fix
-    if context.isUnit then func else context.toPartial |> func
+  def toPartial: PartialTerm = viewPartial(UnitValue)
 
-  override def apply(arg: NormValue) =
+  override def viewPartial(view: NormValue): PartialTerm =
+    val func = Lang.Capture(domain.toPartial, body).fix
+    if view == context then func else context.toPartial |> func
+
+  override def apply(arg: NormValue)                     =
     for
       narrowArg   <- arg.narrow(domain)
       fullContext <- context.merge(narrowArg)
-      res         <- norm.normalize(body, context)
+      res         <- norm.normalize(body, fullContext)
     yield res
 end Closure
 

@@ -2,7 +2,7 @@ package cherry.lamr.norm
 package umami
 
 import cats.syntax.parallel.given
-import cherry.lamr.{Lang, LibRef}
+import cherry.lamr.{Lang, LibRef, TypeOptions}
 import cherry.utils.Act
 import tofu.syntax.monadic.given
 class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
@@ -55,14 +55,13 @@ class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.Norm
 
     case Lang.Capture(domain, body) =>
       for
-        domNorm <- normalize(domain, context)
-        domType <- domNorm.asType
+        domType <- bigTypeStep(domain, context)
       yield Closure(context, body, domType, this)
 
     case Lang.Apply =>
       context.first.flatMap2Par(context.second)(_.apply(_))
 
-    case Lang.Record(k, t) =>
+    case Lang.Record(k, t, _) =>
       for
         tnorm <- normalize(t, context)
         ttype <- tnorm.asType
@@ -76,7 +75,7 @@ class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.Norm
 
     case Lang.Id => Act.pure(context)
 
-    case Lang.Set(k, t, opts) => for tnorm <- normalize(t, context) yield RecordValue.single(k, tnorm)
+    case Lang.Set(k, t) => for tnorm <- normalize(t, context) yield RecordValue.single(k, tnorm)
 
     case Lang.GetKey(k, up) => context.get(k, up)
 

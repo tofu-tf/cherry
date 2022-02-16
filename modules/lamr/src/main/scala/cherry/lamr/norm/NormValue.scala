@@ -4,7 +4,7 @@ import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 import cherry.fix.Fix
 import tofu.syntax.*
 import cats.syntax.show.*
-import cherry.utils.Act
+import cherry.utils.{Act, ErrorCtx, ErrorContext}
 import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
 
 case class Symbol[+T](id: Long, key: RecordKey, tpe: T)
@@ -16,7 +16,11 @@ trait Normalizer:
   def normalize(term: PartialTerm, context: NormValue): Process[NormValue]
 
 trait NormValue:
+  given ErrorCtx[State] = _.value = Some(this)
+
   def toPartial: PartialTerm
+
+  def viewPartial(view: NormValue): PartialTerm = toPartial
 
   def headNorm: Process[NormValue] = Act.pure(this)
 
@@ -26,17 +30,18 @@ trait NormValue:
 
   def isAbstract: Boolean = false
 
-  def apply(term: NormValue): Process[NormValue] = Cause.BadType(TypeCause.Function).raise
+  def apply(term: NormValue): Process[NormValue] = Act.error(Cause.BadType(TypeCause.Function))
 
-  def get(key: RecordKey, up: Int): Process[NormValue] = Cause.BadType(TypeCause.Record).raise
+  def get(key: RecordKey, up: Int): Process[NormValue] =
+    Act.error(Cause.BadType(TypeCause.Record))
 
-  def asType: Process[NormType] = Cause.BadType(TypeCause.Type).raise
+  def asType: Process[NormType] = Act.error(Cause.BadType(TypeCause.Type))
 
   def merge(term: NormValue): Process[NormValue] = Act.pure(umami.Merge(this, term))
 
   def narrow(domain: NormType): Process[NormValue] =
     if domain == BuiltinNormType(BuiltinType.Any) then UnitValue.pure
-    else Act.error(Cause.UnrelatedValue)
+    else Act.error(Cause.UnrelatedValue(domain))
 
   def first = get(0, 0)
 
