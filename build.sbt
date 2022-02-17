@@ -6,7 +6,7 @@ publish / skip := true
 
 val publishSettings = Vector(
   organization := "ru.tinkoff",
-  version      := "0.0.1-Check4-SNAPSHOT",
+  version      := "0.0.2",
 )
 
 val testDependencies = libraryDependencies ++= Vector(

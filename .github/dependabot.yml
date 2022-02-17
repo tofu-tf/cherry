@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "Odomontois"
+      - "road21"
+      - "KS2003"
+      - "mikhailchuryakov"
+      - "skye17"
+    labels:
+      - "dependency-update"
+    ignore:
+      # managed by sbt-github-actions
+      - dependency-name: "olafurpg/setup-scala"
+      - dependency-name: "actions/checkout"
+      - dependency-name: "actions/cache"
+      - dependency-name: "actions/upload-artifact"
+      - dependency-name: "actions/download-artifact"
