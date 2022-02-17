@@ -12,11 +12,9 @@ on:
     branches: ['**']
   push:
     branches: ['**']
-    tags: [v*]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  CI: true
 
 jobs:
   build:
@@ -25,7 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [3.1.1]
-        java: [temurin@8, temurin@17]
+        java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -33,12 +31,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@17)
-        if: matrix.java == 'temurin@17'
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
         uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 11
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -52,9 +50,6 @@ jobs:
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
-      - name: Check formatting
-        run: sbt ++${{ matrix.scala }} scalafmtCheckAll scalafmtSbtCheck
-
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
@@ -62,7 +57,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
 
       - name: Compress target directories
-        run: tar cf targets.tar modules/logging/interop/shapeless/target modules/kernel/target modules/logging/target examples/target modules/doobie/core-ce3/target modules/concurrent/target modules/logging/layout/target modules/optics/core/target modules/kernelCE2Interop/target modules/doobie/core/target modules/zio/target examples-ce3/target tofu-docs/target modules/zio/logging/target modules/core3/target modules/kernel/interop/cats-mtl/target modules/config/target modules/optics/macro/target modules/doobie/logging-ce3/target modules/kernelCE3Interop/target modules/zio/core/target modules/streams/target modules/logging/structured/target modules/logging/interop/log4cats/target modules/doobie/logging/target modules/enums/target target modules/fs2/target modules/logging/derivation/target modules/logging/interop/refined/target modules/higherKindCore/target modules/derivation/target modules/core/target modules/observable/target modules/optics/interop/target modules/memo/target modules/env/target project/target
+        run: tar cf targets.tar target modules/lamr/target modules/parse/target modules/tests/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v2
@@ -73,12 +68,12 @@ jobs:
   publish:
     name: Publish Artifacts
     needs: [build]
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main')
     strategy:
       matrix:
         os: [ubuntu-latest]
         scala: [3.1.1]
-        java: [temurin@8]
+        java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -86,12 +81,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@17)
-        if: matrix.java == 'temurin@17'
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
         uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 11
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -115,10 +110,5 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Publish artifacts
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ++${{ matrix.scala }} ci-release
+      - name: Publish project
+        run: sbt ++${{ matrix.scala }} +publish

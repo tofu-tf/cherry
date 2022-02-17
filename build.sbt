@@ -10,9 +10,9 @@ val publishSettings = Vector(
 )
 
 val testDependencies = libraryDependencies ++= Vector(
-  "org.scalactic" %% "scalactic" % Version.scalaTest ,
+  "org.scalactic" %% "scalactic" % Version.scalaTest,
   "org.scalatest" %% "scalatest" % Version.scalaTest % Test,
-  "org.scalameta" %% "munit" % Version.munit % Test
+  "org.scalameta" %% "munit"     % Version.munit     % Test
 )
 
 val lamrDependencies2 = libraryDependencies ++= Vector(
@@ -26,7 +26,8 @@ val parseDependencies2 = libraryDependencies ++= Vector(
 
 val compilerSettints = scalacOptions ++= Vector(
   "-Yexplicit-nulls",
-  "-encoding", "utf-8",
+  "-encoding",
+  "utf-8",
 )
 
 val defaultSettings = publishSettings ++ testDependencies ++ compilerSettints
