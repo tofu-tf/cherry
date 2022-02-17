@@ -55,8 +55,6 @@ val source: Parser[Fix[Lang]] = term.spaced <* end
 
 @main def testa() =
 
-  println(recordTerm.parse("( x = 1, y = 2 )"))
-  println(application.parse("z z"))
   val strings = Vector(
     """z = []""",
     """ ( x = 1 , y = 2,  z = []) """,
