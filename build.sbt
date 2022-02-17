@@ -4,11 +4,6 @@ val modules = file("modules")
 
 publish / skip := true
 
-val publishSettings = Vector(
-  organization := "ru.tinkoff",
-  version      := "0.0.2",
-)
-
 val testDependencies = libraryDependencies ++= Vector(
   "org.scalactic" %% "scalactic" % Version.scalaTest,
   "org.scalatest" %% "scalatest" % Version.scalaTest % Test,
