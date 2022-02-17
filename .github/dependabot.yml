@@ -10,6 +10,7 @@ updates:
       - "KS2003"
       - "mikhailchuryakov"
       - "skye17"
+      - "saladNights"
     labels:
       - "dependency-update"
     ignore:

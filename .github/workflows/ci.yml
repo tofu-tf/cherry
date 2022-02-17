@@ -12,9 +12,11 @@ on:
     branches: ['**']
   push:
     branches: ['**']
+    tags: [v*]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CI: true
 
 jobs:
   build:
@@ -23,7 +25,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [3.1.1]
-        java: [temurin@11]
+        java: [temurin@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -31,12 +33,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@11)
-        if: matrix.java == 'temurin@11'
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
         uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -49,6 +51,9 @@ jobs:
             ~/AppData/Local/Coursier/Cache/v1
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Check formatting
+        run: sbt ++${{ matrix.scala }} scalafmtCheckAll scalafmtSbtCheck
 
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
@@ -68,12 +73,12 @@ jobs:
   publish:
     name: Publish Artifacts
     needs: [build]
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     strategy:
       matrix:
         os: [ubuntu-latest]
         scala: [3.1.1]
-        java: [temurin@11]
+        java: [temurin@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -81,12 +86,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@11)
-        if: matrix.java == 'temurin@11'
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
         uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
       - name: Cache sbt
         uses: actions/cache@v2
@@ -110,5 +115,10 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Publish project
-        run: sbt ++${{ matrix.scala }} +publish
+      - name: Publish artifacts
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        run: sbt ++${{ matrix.scala }} ci-release

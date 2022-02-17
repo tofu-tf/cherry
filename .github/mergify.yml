@@ -4,7 +4,7 @@ pull_request_rules:
       - author=scala-steward
     actions:
       request_reviews:
-        users: [ Odomontois, road21, KS2003, mikhailchuryakov, skye17]
+        users: [ Odomontois, road21, KS2003, saladNights, mikhailchuryakov, skye17]
       label:
         add: [ dependency-update ]
 
