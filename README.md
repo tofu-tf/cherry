@@ -1,3 +1,3 @@
 # Tinkoff Cherry
 
-Universal Data designe and transform language core 
+Universal Data design and transform language core 
