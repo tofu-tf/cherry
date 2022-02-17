@@ -43,11 +43,11 @@ val integerTerm = integer.map(Lang.Integer(_))
 
 val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
 
-val smallTerm = oneOf(List(integerTerm, recordTerm, listTerm, symbolTerm  , typeTerm  ))
+val smallTerm = oneOf(List(integerTerm, recordTerm, listTerm, symbolTerm, typeTerm))
 
 val application = smallTerm.repSep(whitespace).map(_.reduce(_.apply(_)))
 
-val chain = application.repSep(char(';') *> whitespace).map(_.reduce(_.andThen(_)))
+val chain = application.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 
 val theTerm: Parser[Fix[Lang]] = chain
 

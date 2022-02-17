@@ -4,7 +4,7 @@ import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 import cherry.fix.Fix
 import tofu.syntax.*
 import cats.syntax.show.*
-import cherry.utils.{Act, ErrorCtx, ErrorContext}
+import cherry.utils.{Act, ErrorCtx}
 import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
 
 case class Symbol[+T](id: Long, key: RecordKey, tpe: T)

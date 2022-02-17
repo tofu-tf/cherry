@@ -96,8 +96,9 @@ object Lang:
       term.apply(rec.applyDynamicNamed("apply")(assocs*))
 
   extension [G[+r] >: Lang[r]](term: Fix[G])
-    @targetName("andThen")
     infix def |>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
+
+    def andThen[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
 
     def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) |> Apply
 
