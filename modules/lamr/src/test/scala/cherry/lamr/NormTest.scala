@@ -64,5 +64,3 @@ class NormTest extends munit.FunSuite:
   test("curried lambda application") {
     plusCurried.call(x = Lang.Integer(6)).call(y = Lang.Integer(-4)) shouldNorm Lang.Integer(2)
   }
-
-

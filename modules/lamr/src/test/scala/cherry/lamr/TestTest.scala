@@ -9,7 +9,7 @@ import tofu.common.Display
 
 class TestTest extends munit.FunSuite {
   test("lol") {
-    assertEquals("kek","kek")
+    assertEquals("kek", "kek")
   }
 }
 

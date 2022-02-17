@@ -13,4 +13,4 @@ trait InequasionSystem[T]:
   def +(ieq: Inequasion[T]): Either[String, InequasionSystem[T]]
 
 class DummyIneqSystem[T] extends InequasionSystem[T]:
-  def +(ieq: Inequasion[T]) = Right(this) 
+  def +(ieq: Inequasion[T]) = Right(this)

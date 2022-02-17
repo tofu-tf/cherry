@@ -8,11 +8,11 @@ import tofu.syntax.monadic.given
 class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 
-  def normalize(term: PartialTerm, context: NormValue): Process[NormValue] =
+  def normalize(term: PartialTerm, context: NormValue): Process[NormValue]          =
     Act.action(st => dbg(term, context, st)) >> bigStep(term, context)
 
   private def bigTypeStep(term: PartialTerm, context: NormValue): Process[NormType] =
-      normalize(term, context).flatMap(_.asType)
+    normalize(term, context).flatMap(_.asType)
 
   private def bigStep(term: PartialTerm, context: NormValue): Process[NormValue]    = term.unpack match
     case s @ Symbol(id, key, term) =>
@@ -54,8 +54,7 @@ class UmamiNormalizer(library: Library, dbg: (PartialTerm, cherry.lamr.norm.Norm
       yield result
 
     case Lang.Capture(domain, body) =>
-      for
-        domType <- bigTypeStep(domain, context)
+      for domType <- bigTypeStep(domain, context)
       yield Closure(context, body, domType, this)
 
     case Lang.Apply =>

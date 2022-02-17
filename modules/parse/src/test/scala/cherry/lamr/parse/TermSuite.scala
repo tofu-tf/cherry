@@ -39,4 +39,3 @@ class TermSuite extends AnyFunSuite with Matchers:
   }
 
 end TermSuite
-

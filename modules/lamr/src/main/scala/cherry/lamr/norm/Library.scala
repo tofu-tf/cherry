@@ -25,7 +25,6 @@ private def builtinLayeredMap = LayeredMap.fromVector(builtins.map(bi => (bi.nam
 object BuiltinLibrary extends LibraryPack(builtinMap) with RecordValueBase:
   val map = builtinLayeredMap
 
-
 trait NameResolutionLibrary(val name: String) extends Library with NormValue:
 
   override def toPartial: PartialTerm = Lang.External(LibRef(name, Lang.get(0)))
