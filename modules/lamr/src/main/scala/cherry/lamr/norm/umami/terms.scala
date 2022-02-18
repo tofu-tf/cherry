@@ -2,7 +2,7 @@ package cherry.lamr.norm
 package umami
 
 import cherry.fix.Fix
-import cherry.lamr.{BuiltinType, Lang, RecordKey, TypeOptions}
+import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey, TypeOptions}
 import cherry.utils.{Act, ErrorCtx, LayeredMap}
 
 import scala.collection.immutable.TreeMap
@@ -12,12 +12,12 @@ import cats.syntax.traverseFilter.given
 import tofu.syntax.collections.given
 import tofu.syntax.foption.given
 
-case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
+case class Abstract(term: Term, tpe: NormType) extends NormValue:
   def toPartial = term
 
   override def isAbstract = true
 
-  private def make(term: PartialTerm, tpe: Process[NormType]): Process[NormValue] =
+  private def make(term: Term, tpe: Process[NormType]): Process[NormValue] =
     tpe.map(Abstract(term, _))
 
   override def apply(arg: NormValue)                                              =
@@ -33,10 +33,10 @@ trait RecordValueBase extends NormValue:
 
   def toPartial = joinAll(map.journal.iterator.map(toRecord))
 
-  private def toRecord(key: RecordKey, value: NormValue): PartialTerm =
+  private def toRecord(key: RecordKey, value: NormValue): Term =
     Lang.set(key, value.toPartial)
 
-  private def joinAll(it: IterableOnce[PartialTerm]): PartialTerm     =
+  private def joinAll(it: IterableOnce[Term]): Term     =
     it.iterator.reduceOption((rec, set) => Lang.Merge(rec, set).fix).getOrElse(Lang.Unit)
 
   override def merge(term: NormValue): Process[NormValue]             = term match
@@ -70,10 +70,10 @@ object RecordValue:
 
   def from(kvs: (RecordKey, NormValue)*) = fromVector(kvs.toVector)
 
-case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm: Normalizer) extends NormValue:
-  def toPartial: PartialTerm = viewPartial(UnitValue)
+case class Closure(context: NormValue, body: Term, domain: NormType, norm: Normalizer) extends NormValue:
+  def toPartial: Term = viewPartial(UnitValue)
 
-  override def viewPartial(view: NormValue): PartialTerm =
+  override def viewPartial(view: NormValue): Term =
     val func = Lang.Capture(domain.toPartial, body).fix
     if view == context then func else context.toPartial |> func
 
@@ -109,6 +109,9 @@ trait BuiltinTypeValue(bt: BuiltinType) extends NormValue:
     domain match
       case BuiltinNormType(`bt`, _) => Act.pure(this)
       case _                        => super.narrow(domain)
+
+case class Variable(id: Long, hint: String) extends NormValue:
+  def toPartial = Lang.External(LibRef("variable", Lang.Integer(id)))
 
 case class IntegerValue(value: BigInt)  extends BuiltinTypeValue(BuiltinType.Integer):
   def toPartial = Lang.Integer(value)

@@ -20,13 +20,13 @@ trait NormType                                                            extend
   override def asType: Process[NormType] = Act.pure(this)
 
 case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None) extends NormType:
-  override def toPartial: PartialTerm = Lang.Builtin(bt)
+  override def toPartial: Term = Lang.Builtin(bt)
 
 case class UniverseType(options: TypeOptions)                             extends NormType:
-  override def toPartial: PartialTerm = Lang.Universe(options)
+  override def toPartial: Term = Lang.Universe(options)
 
 case class RecordType(fields: LayeredMap[RecordKey, NormType])            extends NormType:
-  def toPartial: PartialTerm                                   =
+  def toPartial: Term                                   =
     fields.journal.map((k, v) => Lang.Record(k, v.toPartial, TypeOptions()).fix).reduce(Lang.Extend(_, _).fix)
 
   override def asAbstract                                      =

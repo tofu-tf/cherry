@@ -1,7 +1,7 @@
 package cherry.lamr.norm.ints
 import cherry.lamr.norm.umami.IntegerValue
 import cherry.lamr.{Lang, LibRef, RecordKey}
-import cherry.lamr.norm.{Cause, Library, NameResolutionLibrary, NormValue, Normalizer, PartialTerm, Process}
+import cherry.lamr.norm.{Cause, Library, NameResolutionLibrary, NormValue, Normalizer, Term, Process}
 import cherry.utils.Act
 
 object IntsLibrary extends NameResolutionLibrary("ints"):
@@ -17,7 +17,7 @@ object IntsLibrary extends NameResolutionLibrary("ints"):
   }
 
   class Fn(name: String, call: (BigInt, BigInt) => BigInt) extends NormValue:
-    override def toPartial: PartialTerm = Lang.External(LibRef("ints", Lang.get(name)))
+    override def toPartial: Term = Lang.External(LibRef("ints", Lang.get(name)))
 
     override def apply(term: NormValue): Process[NormValue] =
       term.first.flatMap(_.asInt).map2Par(term.second.flatMap(_.asInt))((x, y) => IntegerValue(call(x, y)))

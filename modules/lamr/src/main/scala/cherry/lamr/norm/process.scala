@@ -6,18 +6,18 @@ import cats.arrow.FunctionK
 import cats.Applicative
 import cats.syntax.applicative
 import cherry.fix.Fix.Fix
-import cherry.lamr.norm.umami.NormType
+import cherry.lamr.norm.umami.{NormType, Variable}
 import cherry.utils.Act
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 
 case class State(
-    var symbolCount: Long = 0,
-    var inequasions: InequasionSystem[PartialTerm] = DummyIneqSystem(),
-    var symbols: Map[Long, RecordKey] = Map.empty,
-    var position: Option[Position] = None,
-    var value: Option[NormValue] = None,
-    var term: Option[PartialTerm] = None,
-    var errors: Vector[Error] = Vector.empty,
+                  var symbolCount: Long = 0,
+                  var inequasions: InequasionSystem[Term] = DummyIneqSystem(),
+                  var symbols: Map[Long, RecordKey] = Map.empty,
+                  var position: Option[Position] = None,
+                  var value: Option[NormValue] = None,
+                  var term: Option[Term] = None,
+                  var errors: Vector[Error] = Vector.empty,
 ) extends Act.Raising[Cause]:
   def error(e: => Cause) = errors :+= Error(e, value, term, position)
 
@@ -41,20 +41,20 @@ enum Cause:
   def raise: Process[Nothing] = Act.error(this)
 
 case class Error(
-    cause: Cause,
-    value: Option[NormValue] = None,
-    term: Option[PartialTerm] = None,
-    position: Option[Position] = None,
+                  cause: Cause,
+                  value: Option[NormValue] = None,
+                  term: Option[Term] = None,
+                  position: Option[Position] = None,
 )
 
 end Error
 
 type Process[+A] = Act[State, A]
 
-def newSymbol[R](name: String, tpe: R): Process[Symbol[R]] =
+def newSymbol[R](name: String, tpe: R): Process[NormValue] =
   Act.action { state =>
     state.symbolCount += 1
     val id = state.symbolCount
     state.symbols += id -> name
-    Symbol(id, name, tpe)
+    Variable(id, name)
   }

@@ -7,6 +7,8 @@ trait SimpleTraversing[F[+_], +A]:
   self: F[A] =>
   def traverse[G[_]: Applicative, B](f: A => G[B]): G[F[B]]
 
+  def map[B](f: A => B): F[B] = traverse[[x] =>> x, B](f)
+
   def foldLeft[B](b: B)(f: (B, A) => B): B =
     traverse[[a] =>> ConstEndo[B, a, true], B](a => f(_, a)).apply(b)
 

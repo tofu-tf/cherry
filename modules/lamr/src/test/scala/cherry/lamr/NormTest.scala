@@ -1,13 +1,13 @@
 package cherry.lamr
 
 import cherry.lamr.norm.umami.{RecordValue, UmamiNormalizer, UnitValue}
-import cherry.lamr.norm.{BuiltinLibrary, Cause, Error, NormValue, Normalizer, PartialTerm, State}
+import cherry.lamr.norm.{BuiltinLibrary, Cause, Error, NormValue, Normalizer, Term, State}
 import cherry.fix.Fix
 import cherry.lamr.norm.ints.IntsLibrary
 import munit.Clue
 
 class NormTest extends munit.FunSuite:
-  def debugNorm(t: PartialTerm, ctx: NormValue, state: State) = println(s"normalizing $t")
+  def debugNorm(t: Term, ctx: NormValue, state: State) = println(s"normalizing $t")
 
   val normalizer: Normalizer = UmamiNormalizer(BuiltinLibrary)
 
