@@ -7,24 +7,20 @@ import cats.syntax.show.*
 import cherry.utils.{Act, ErrorCtx}
 import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
 
-case class Symbol[+T](id: Long, key: RecordKey, tpe: T)
-
-type Partial[+A] = Lang[A] | Symbol[A]
-
-type PartialTerm = Fix[Partial]
+type Term = Fix[Lang]
 trait Normalizer:
-  def normalize(term: PartialTerm, context: NormValue): Process[NormValue]
+  def normalize(term: Term, context: NormValue): Process[NormValue]
 
 trait NormValue:
   given ErrorCtx[State] = _.value = Some(this)
 
-  def toPartial: PartialTerm
+  def toTerm: Term
 
-  def viewPartial(view: NormValue): PartialTerm = toPartial
+  def view(context: NormValue): Term = toTerm
 
   def headNorm: Process[NormValue] = Act.pure(this)
 
-  def errorDisplay: Option[String] = Some(toPartial.toString)
+  def errorDisplay: Option[String] = Some(toTerm.toString)
 
   def position: Option[Position] = None
 

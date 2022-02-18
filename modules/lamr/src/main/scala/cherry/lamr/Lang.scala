@@ -1,5 +1,8 @@
 package cherry.lamr
+import cats.{Applicative, Eval, Traverse}
 import cherry.fix.Fix
+import cherry.lamr.Lang.{Capture, External, GetKey, Universe}
+import cherry.utils.SimpleTraversing
 
 import scala.annotation.targetName
 import scala.language.dynamics
@@ -28,15 +31,30 @@ enum BuiltinType:
 
   given Conversion[BuiltinType, Lang[Nothing]] = Lang.Builtin(_)
 
-enum Lang[+R]:
-  case Universe(options: TypeOptions)
+enum Lang[+R] extends SimpleTraversing[Lang, R]:
+  def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
+    case u @ (
+          _: Universe | _: Builtin | Id | Unit | Apply | _: Str | _: Float | _: Integer | _: Bool | _: External |
+          _: GetKey
+        ) =>
+      F.pure(u)
+    case Extend(base, deps)         => F.map2(f(base), f(deps))(Extend(_, _))
+    case Function(domain, body)     => F.map2(f(domain), f(body))(Function(_, _))
+    case Set(key, term)             => F.map(f(term))(Set(key, _))
+    case Merge(base, deps)          => F.map2(f(base), f(deps))(Merge(_, _))
+    case Narrow(term, typ)          => F.map2(f(term), f(typ))(Narrow(_, _))
+    case AndThen(left, right)       => F.map2(f(left), f(right))(AndThen(_, _))
+    case Capture(domain, body)      => F.map2(f(domain), f(body))(Capture(_, _))
+    case Record(name, typ, options) => F.map(f(typ))(Record(name, _, options))
+
+  case Universe(options: TypeOptions) extends Lang[Nothing]
 
   case Record(name: RecordKey, typ: R, options: TypeOptions)
   case Extend(base: R, deps: R)
   case Function(domain: R, body: R)
-  case Builtin(bt: BuiltinType)
+  case Builtin(bt: BuiltinType) extends Lang[Nothing]
 
-  case GetKey(key: RecordKey, up: Int)
+  case GetKey(key: RecordKey, up: Int) extends Lang[Nothing]
   case Unit
   case Id
   case Set(key: RecordKey, term: R)
@@ -48,12 +66,12 @@ enum Lang[+R]:
   case Capture(domain: R, body: R)
   case Apply
 
-  case External(ref: LibRef)
+  case External(ref: LibRef) extends Lang[Nothing]
 
-  case Str(value: String)
-  case Float(value: Double)
-  case Integer(value: BigInt)
-  case Bool(value: Boolean)
+  case Str(value: String) extends Lang[Nothing]
+  case Float(value: Double) extends Lang[Nothing]
+  case Integer(value: BigInt) extends Lang[Nothing]
+  case Bool(value: Boolean) extends Lang[Nothing]
 
 object Lang:
   extension [G[+x] >: Lang[x]](lang: Lang[Fix[G]]) def fix: Fix[G] = Fix(lang)
@@ -65,7 +83,7 @@ object Lang:
   object get extends Dynamic:
     def apply(key: RecordKey) = GetKey(key, 0)
 
-    def unapply(key: GetKey[Any]): Option[RecordKey] = Option.when(key.up == 0)(key.key)
+    def unapply(key: GetKey): Option[RecordKey] = Option.when(key.up == 0)(key.key)
 
     def selectDynamic(name: String) = GetKey(name, 0)
 
@@ -105,5 +123,7 @@ object Lang:
     def merge[H[+r] >: G[r]](ext: Fix[H]): Fix[H] = Merge(term, ext).fix
 
     def call: Call[G] = Call(term)
+
+  given Traverse[Lang] = SimpleTraversing.traverseInstance[Lang]
 
 type LangVal = Fix[Lang]

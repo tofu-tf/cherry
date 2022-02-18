@@ -2,7 +2,7 @@ package cherry.lamr.norm
 package umami
 
 import cherry.fix.Fix
-import cherry.lamr.{BuiltinType, Lang, RecordKey, TypeOptions}
+import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey, TypeOptions}
 import cherry.utils.{Act, ErrorCtx, LayeredMap}
 
 import scala.collection.immutable.TreeMap
@@ -12,18 +12,18 @@ import cats.syntax.traverseFilter.given
 import tofu.syntax.collections.given
 import tofu.syntax.foption.given
 
-case class Abstract(term: PartialTerm, tpe: NormType) extends NormValue:
-  def toPartial = term
+case class Abstract(term: Term, tpe: NormType) extends NormValue:
+  def toTerm = term
 
   override def isAbstract = true
 
-  private def make(term: PartialTerm, tpe: Process[NormType]): Process[NormValue] =
+  private def make(term: Term, tpe: Process[NormType]): Process[NormValue] =
     tpe.map(Abstract(term, _))
 
-  override def apply(arg: NormValue)                                              =
-    make(term |> arg.toPartial, tpe.applied(arg))
+  override def apply(arg: NormValue)                                       =
+    make(term |> arg.toTerm, tpe.applied(arg))
 
-  override def get(key: RecordKey, up: Int)                                       =
+  override def get(key: RecordKey, up: Int)                                =
     make(term |> Lang.GetKey(key, up), tpe.got(key, up))
 
 end Abstract
@@ -31,19 +31,19 @@ end Abstract
 trait RecordValueBase extends NormValue:
   def map: LayeredMap[RecordKey, NormValue]
 
-  def toPartial = joinAll(map.journal.iterator.map(toRecord))
+  def toTerm = joinAll(map.journal.iterator.map(toRecord))
 
-  private def toRecord(key: RecordKey, value: NormValue): PartialTerm =
-    Lang.set(key, value.toPartial)
+  private def toRecord(key: RecordKey, value: NormValue): Term  =
+    Lang.set(key, value.toTerm)
 
-  private def joinAll(it: IterableOnce[PartialTerm]): PartialTerm     =
+  private def joinAll(it: IterableOnce[Term]): Term             =
     it.iterator.reduceOption((rec, set) => Lang.Merge(rec, set).fix).getOrElse(Lang.Unit)
 
-  override def merge(term: NormValue): Process[NormValue]             = term match
+  override def merge(term: NormValue): Process[NormValue]       = term match
     case ext: RecordValueBase => Act.pure(fromVector(map.journal ++ ext.map.journal))
     case _                    => super.merge(term)
 
-  override def get(key: RecordKey, up: Int): Process[NormValue]       =
+  override def get(key: RecordKey, up: Int): Process[NormValue] =
     val z = summon[ErrorCtx[State]]
     Act.option(map.get(key, up), Cause.MissingKey(key))
 
@@ -52,7 +52,7 @@ trait RecordValueBase extends NormValue:
   )(name: RecordKey, fieldValue: NormValue): Process[Option[(RecordKey, NormValue)]] =
     domainMap.get(name, 0).traverse(fieldValue.narrow).mapIn(name -> _)
 
-  override def narrow(domain: NormType): Process[NormValue]           =
+  override def narrow(domain: NormType): Process[NormValue]     =
     for
       ts  <- domain.fieldTypes
       dmap = LayeredMap.fromVector(ts)
@@ -70,14 +70,14 @@ object RecordValue:
 
   def from(kvs: (RecordKey, NormValue)*) = fromVector(kvs.toVector)
 
-case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm: Normalizer) extends NormValue:
-  def toPartial: PartialTerm = viewPartial(UnitValue)
+case class Closure(context: NormValue, body: Term, domain: NormType, norm: Normalizer) extends NormValue:
+  def toTerm: Term = view(UnitValue)
 
-  override def viewPartial(view: NormValue): PartialTerm =
-    val func = Lang.Capture(domain.toPartial, body).fix
-    if view == context then func else context.toPartial |> func
+  override def view(newContext: NormValue): Term =
+    val func = Lang.Capture(domain.toTerm, body).fix
+    if context == newContext then func else context.toTerm |> func
 
-  override def apply(arg: NormValue)                     =
+  override def apply(arg: NormValue)             =
     for
       narrowArg   <- arg.narrow(domain)
       fullContext <- context.merge(narrowArg)
@@ -85,16 +85,16 @@ case class Closure(context: NormValue, body: PartialTerm, domain: NormType, norm
     yield res
 end Closure
 
-case class Merge(base: NormValue, ext: NormValue)                                             extends NormValue:
-  def toPartial = Lang.Extend(base.toPartial, ext.toPartial).fix
+case class Merge(base: NormValue, ext: NormValue)                                      extends NormValue:
+  def toTerm = Lang.Extend(base.toTerm, ext.toTerm).fix
 
   override def merge(ext2: NormValue) = ext.merge(ext2).flatMap(base.merge)
 
-case class Narrow(base: NormValue, expect: NormType)                                          extends NormValue:
-  def toPartial = Lang.Narrow(base.toPartial, expect.toPartial).fix
+case class Narrow(base: NormValue, expect: NormType)                                   extends NormValue:
+  def toTerm = Lang.Narrow(base.toTerm, expect.toTerm).fix
 
-case object UnitValue                                                                         extends NormValue:
-  def toPartial = Lang.Unit
+case object UnitValue                                                                  extends NormValue:
+  def toTerm = Lang.Unit
 
   val pure = Act.pure(this)
 
@@ -104,22 +104,25 @@ case object UnitValue                                                           
 
   override def merge(term: NormValue): Process[NormValue] = Act.pure(term)
 
-trait BuiltinTypeValue(bt: BuiltinType) extends NormValue:
+trait BuiltinTypeValue(bt: BuiltinType)     extends NormValue:
   override def narrow(domain: NormType): Process[NormValue] =
     domain match
       case BuiltinNormType(`bt`, _) => Act.pure(this)
       case _                        => super.narrow(domain)
 
-case class IntegerValue(value: BigInt)  extends BuiltinTypeValue(BuiltinType.Integer):
-  def toPartial = Lang.Integer(value)
+case class Variable(id: Long, hint: String) extends NormValue:
+  def toTerm = Lang.External(LibRef("variable", Lang.Integer(id)))
 
-case class StringValue(value: String)   extends BuiltinTypeValue(BuiltinType.Str):
-  def toPartial = Lang.Str(value)
+case class IntegerValue(value: BigInt)      extends BuiltinTypeValue(BuiltinType.Integer):
+  def toTerm = Lang.Integer(value)
 
-case class FloatValue(value: Double)    extends BuiltinTypeValue(BuiltinType.Float):
+case class StringValue(value: String)       extends BuiltinTypeValue(BuiltinType.Str):
+  def toTerm = Lang.Str(value)
 
-  def toPartial = Lang.Float(value)
+case class FloatValue(value: Double)        extends BuiltinTypeValue(BuiltinType.Float):
+
+  def toTerm = Lang.Float(value)
 
 case class BooleanValue(value: Boolean) extends BuiltinTypeValue(BuiltinType.Bool):
 
-  def toPartial = Lang.Bool(value)
+  def toTerm = Lang.Bool(value)
