@@ -5,3 +5,5 @@ project/**/metals.sbt
 .metals
 .idea
 .bsp
+.vscode
+./out
