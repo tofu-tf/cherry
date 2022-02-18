@@ -14,13 +14,13 @@ trait Normalizer:
 trait NormValue:
   given ErrorCtx[State] = _.value = Some(this)
 
-  def toPartial: Term
+  def toTerm: Term
 
-  def viewPartial(view: NormValue): Term = toPartial
+  def view(context: NormValue): Term = toTerm
 
   def headNorm: Process[NormValue] = Act.pure(this)
 
-  def errorDisplay: Option[String] = Some(toPartial.toString)
+  def errorDisplay: Option[String] = Some(toTerm.toString)
 
   def position: Option[Position] = None
 

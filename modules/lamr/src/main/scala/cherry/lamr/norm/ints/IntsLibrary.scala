@@ -17,7 +17,7 @@ object IntsLibrary extends NameResolutionLibrary("ints"):
   }
 
   class Fn(name: String, call: (BigInt, BigInt) => BigInt) extends NormValue:
-    override def toPartial: Term = Lang.External(LibRef("ints", Lang.get(name)))
+    override def toTerm: Term = Lang.External(LibRef("ints", Lang.get(name)))
 
     override def apply(term: NormValue): Process[NormValue] =
       term.first.flatMap(_.asInt).map2Par(term.second.flatMap(_.asInt))((x, y) => IntegerValue(call(x, y)))

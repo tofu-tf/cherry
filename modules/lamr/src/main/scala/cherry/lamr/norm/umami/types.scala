@@ -20,14 +20,14 @@ trait NormType                                                            extend
   override def asType: Process[NormType] = Act.pure(this)
 
 case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None) extends NormType:
-  override def toPartial: Term = Lang.Builtin(bt)
+  override def toTerm: Term = Lang.Builtin(bt)
 
 case class UniverseType(options: TypeOptions)                             extends NormType:
-  override def toPartial: Term = Lang.Universe(options)
+  override def toTerm: Term = Lang.Universe(options)
 
 case class RecordType(fields: LayeredMap[RecordKey, NormType])            extends NormType:
-  def toPartial: Term                                   =
-    fields.journal.map((k, v) => Lang.Record(k, v.toPartial, TypeOptions()).fix).reduce(Lang.Extend(_, _).fix)
+  def toTerm: Term                                   =
+    fields.journal.map((k, v) => Lang.Record(k, v.toTerm, TypeOptions()).fix).reduce(Lang.Extend(_, _).fix)
 
   override def asAbstract                                      =
     fields.parTraverse(t => t.asAbstract).map(kvs => RecordValue.fromVector(kvs.journal))
@@ -38,7 +38,7 @@ case class RecordType(fields: LayeredMap[RecordKey, NormType])            extend
   override def fieldTypes                                      = Act.pure(fields.journal)
 
 case class FunctionType(dom: NormType, body: NormType)                    extends NormType:
-  def toPartial = Lang.Function(dom.toPartial, body.toPartial).fix
+  def toTerm = Lang.Function(dom.toTerm, body.toTerm).fix
 
 object RecordType:
   def single(key: RecordKey, fieldType: NormType) = RecordType.fromVector(Vector(key -> fieldType))
@@ -46,4 +46,4 @@ object RecordType:
   def fromVector(kvs: Vector[(RecordKey, NormType)]) = RecordType(LayeredMap.fromVector(kvs))
 
 case class ExtendType(base: NormType, ext: NormType) extends NormType:
-  def toPartial = Lang.Extend(base.toPartial, ext.toPartial).fix
+  def toTerm = Lang.Extend(base.toTerm, ext.toTerm).fix

@@ -16,7 +16,7 @@ class NormTest extends munit.FunSuite:
   extension (t: Fix[Lang])
     infix def shouldNorm(to: Fix[Lang]) =
       val state   = State()
-      val res     = normalizer.normalize(t, BuiltinLibrary).map(_.viewPartial(BuiltinLibrary)).run(state, maxSteps = 1000)
+      val res     = normalizer.normalize(t, BuiltinLibrary).map(_.view(BuiltinLibrary)).run(state, maxSteps = 1000)
       val message = "errors during calculation"
       assert(res.isDefined, clue = clues((message +: state.errors.flatMap(errClues))*))
       assertEquals(res.get, to)
