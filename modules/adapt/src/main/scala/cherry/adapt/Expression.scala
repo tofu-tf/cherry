@@ -10,5 +10,3 @@ class Expression(expr: Term):
   def unpack: Lang[Expression] =
     expr.unpack match
       case l: Lang[Term]     => l.map(Expression(_))
-
-

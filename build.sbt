@@ -17,9 +17,8 @@ val parseDependencies2 = libraryDependencies ++= Vector(
   "org.typelevel" %% "cats-parse" % Version.catsParse,
 ).map(_.cross(CrossVersion.for3Use2_13))
 
-
 val scala3Settings = Vector(
-  scalaVersion := "3.1.1",
+  scalaVersion       := "3.1.1",
   crossScalaVersions := Vector("3.1.1"),
   scalacOptions ++= Vector(
     "-Yexplicit-nulls",
@@ -50,6 +49,6 @@ lazy val tests = project
   .dependsOn(lamr, parse)
 
 lazy val adapt = project
-  .in(modules/ "adapt")
+  .in(modules / "adapt")
   .settings(defaultSettings)
   .dependsOn(lamr, parse)

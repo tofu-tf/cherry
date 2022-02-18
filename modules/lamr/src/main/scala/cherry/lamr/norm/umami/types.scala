@@ -26,7 +26,7 @@ case class UniverseType(options: TypeOptions)                             extend
   override def toTerm: Term = Lang.Universe(options)
 
 case class RecordType(fields: LayeredMap[RecordKey, NormType])            extends NormType:
-  def toTerm: Term                                   =
+  def toTerm: Term                                             =
     fields.journal.map((k, v) => Lang.Record(k, v.toTerm, TypeOptions()).fix).reduce(Lang.Extend(_, _).fix)
 
   override def asAbstract                                      =
