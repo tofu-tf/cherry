@@ -5,7 +5,7 @@ ThisBuild / crossScalaVersions := Vector("3.1.1")
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq(
-  RefPredicate.Equals(Ref.Branch("master")),
+  RefPredicate.Equals(Ref.Branch("base")),
   RefPredicate.StartsWith(Ref.Tag("v"))
 )
 
