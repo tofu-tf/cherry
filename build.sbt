@@ -50,5 +50,6 @@ lazy val tests = project
 
 lazy val adapt = project
   .in(modules / "adapt")
+  .settings(name := "cherry-adapt")
   .settings(defaultSettings)
   .dependsOn(lamr, parse)
