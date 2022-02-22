@@ -10,15 +10,15 @@ class TermTests extends munit.FunSuite {
       assertEquals(source.parse(exp), Right(("", lang)))
 
   test("unit") {
-    "[]" shouldParse Lang.Unit
+    "()" shouldParse Lang.Unit
   }
 
   test("singleton tuple") {
-    "[1]" shouldParse Lang.rec(1)
+    "(1, )" shouldParse Lang.rec(1)
   }
 
   test("integer tuple") {
-    "[1, 2 ,3]" shouldParse Lang.rec(1, 2, 3)
+    "(1, 2 ,3)" shouldParse Lang.rec(1, 2, 3)
   }
 
   test("record") {
@@ -30,22 +30,15 @@ class TermTests extends munit.FunSuite {
   }
 
   test("complex application") {
-    "x [a, b]" shouldParse Lang.get.x.apply(Lang.rec(Lang.get.a, Lang.get.b))
-  }
-
-  test("very complex application") {
-    "foo [ 3, 4 , 5 ] (a = 2, b = 3)" shouldParse Lang.get.foo.apply(Lang.rec(3, 4, 5)).apply(Lang.rec(a = 2, b = 3))
-  }
-
-  test("complex chaning") {
-    "x a ; z z ; z z" shouldParse Lang.get.x
-      .apply(Lang.get.a)
-      .andThen(Lang.get.z.apply(Lang.get.z))
-      .andThen(Lang.get.z.apply(Lang.get.z))
+    "x (a, b)" shouldParse Lang.get.x.apply(Lang.rec(Lang.get.a, Lang.get.b))
   }
 
   test("even more complex application") {
-    "x y (z = [], y = x)" shouldParse Lang.get.x.apply(Lang.get.y).apply(Lang.rec(z = Lang.Unit, y = Lang.get.x))
+    "x y (z = (), y = x)" shouldParse Lang.get.x.apply(Lang.get.y).apply(Lang.rec(z = Lang.Unit, y = Lang.get.x))
+  }
+
+  test("very complex application") {
+    "foo ( 3, 4 , 5 ) (a = 2, b = 3)" shouldParse Lang.get.foo.apply(Lang.rec(3, 4, 5)).apply(Lang.rec(a = 2, b = 3))
   }
 
   test("chaining") {
@@ -61,15 +54,12 @@ class TermTests extends munit.FunSuite {
         .andThen(Lang.get.z)
   }
 
-  test("very complex application") {
-    "foo [ 3, 4 , 5 ] (a = 2, b = 3)" shouldParse Lang.get.foo.apply(Lang.rec(3, 4, 5)).apply(Lang.rec(a = 2, b = 3))
+  test("paren application") {
+    "a (b c)" shouldParse Lang.get.a.apply(Lang.get.b.apply(Lang.get.c))
   }
 
-  test("complex chaning") {
-    "x a ; z z ; z z" shouldParse Lang.get.x
-      .apply(Lang.get.a)
-      .andThen(Lang.get.z.apply(Lang.get.z))
-      .andThen(Lang.get.z.apply(Lang.get.z))
+  test("parent chaining") {
+    "a ; b (c ; d)" shouldParse Lang.get.a |> Lang.get.b.apply(Lang.get.c |> Lang.get.d)
   }
 
 }

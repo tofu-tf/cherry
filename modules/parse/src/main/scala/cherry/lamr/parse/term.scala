@@ -3,17 +3,18 @@ package cherry.lamr.parse
 package term
 
 import cats.parse.Parser
-import Parser._
-import tofu.syntax.monadic._
+import Parser.*
+import tofu.syntax.monadic.*
 import cherry.lamr.Lang
 import cherry.fix.Fix
 import cherry.lamr.RecordKey
-
-import basic._
+import basic.*
 import basic.given
+import cats.data.NonEmptyList
 import types.typeTerm
+import cherry.lamr.norm.Term
 
-val term: Parser[Fix[Lang]] = defer(theTerm)
+val term: Parser[Term] = defer(theTerm)
 
 val separator = char(',')
 
@@ -33,36 +34,55 @@ def mergeAll(terms: IterableOnce[Fix[Lang]]): Fix[Lang] =
 
 val assignment = (symbolKey, char('=').spaced *> term).mapN((key, t) => Lang.set(key, t))
 
-val recordSyntax = assignment.spaced.repSep0(separator).map(mergeAll)
+val recordElement = assignment.backtrack.eitherOr(term)
 
-val listTerm = char('[') *> listSyntax <* char(']')
+def indexRecord(elems: NonEmptyList[Either[Term, Term]]): Iterator[Term] =
+  elems.iterator
+    .scanLeft((0, Lang.Unit: Term)) {
+      case ((i, _), Right(t)) => (i, t)
+      case ((i, _), Left(t))  => (i + 1, Lang.set(i, t))
+    }
+    .map(_._2)
+    .drop(1)
 
-val recordTerm = char('(') *> recordSyntax <* char(')')
+val recordTail = separator *> whitespace *> (recordElement <* whitespace).repSep0(separator *> whitespace)
+
+val parenElements =
+  (whitespace *> (recordElement.spaced ~ recordTail.?).?).map {
+    case None                     => Lang.Unit
+    case Some((Left(only), None)) => only
+    case Some((head, tail))       => mergeAll(indexRecord(NonEmptyList(head, tail.getOrElse(Nil))))
+  }
+
+val recordTerm = char('(') *> parenElements <* char(')')
 
 val integerTerm = integer.map(Lang.Integer(_))
 
-val arguments = char('(') *> recordSyntax.orElse(term) <* char(')')
-
-val smallTerm = oneOf(List(integerTerm, recordTerm, listTerm, symbolTerm, typeTerm))
+val smallTerm = oneOf(List(integerTerm, recordTerm, symbolTerm, typeTerm))
 
 val application = smallTerm.repSep(whitespace).map(_.reduce(_.apply(_)))
 
 val chain = application.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 
-val theTerm: Parser[Fix[Lang]] = chain
+val theTerm: Parser[Term] = chain
 
-val source: Parser[Fix[Lang]] = term.spaced <* end
+val source: Parser[Term] = term.spaced <* end
 
 @main def testa() =
 
   val strings = Vector(
-    """z = []""",
-    """ ( x = 1 , y = 2,  z = []) """,
+    """z = ()""",
+    """ ( x = 1 , y = 2,  z = ()) """,
     "z",
     "z z",
-    """foo [ 3, 4 , 5 ] (a = 2, b = 3)""",
+    """foo ( 3, 4 , 5 ) (a = 2, b = 3)""",
     "x a ; z z ; z z"
   )
+
+  println(parenElements.parse("x = 1 , y  = 2 , z = ()  "))
+  println(parenElements.parse("x"))
+  println(parenElements.parse("x, "))
+  println("-" * 20)
 
   val s1 = "(1, 2, 3)"
 
