@@ -1,8 +1,8 @@
 package cherry.lamr.parse
 
 import cherry.fix.Fix
-import cherry.lamr.Lang
 import cherry.lamr.parse.term.source
+import cherry.lamr.{BuiltinType, Lang}
 
 class TermTests extends munit.FunSuite {
   extension (exp: String)
@@ -58,8 +58,18 @@ class TermTests extends munit.FunSuite {
     "a (b c)" shouldParse Lang.get.a.apply(Lang.get.b.apply(Lang.get.c))
   }
 
-  test("parent chaining") {
+  test("paren chaining") {
     "a ; b (c ; d)" shouldParse Lang.get.a |> Lang.get.b.apply(Lang.get.c |> Lang.get.d)
+  }
+
+  test("builtin tests") {
+    "a $true" shouldParse Lang.get.a.apply(Lang.Bool(true))
+    "($false, $str, $float, $int)" shouldParse Lang.rec(
+      Lang.Bool(false),
+      Lang.Builtin(BuiltinType.Str),
+      Lang.Builtin(BuiltinType.Float),
+      Lang.Builtin(BuiltinType.Integer)
+    )
   }
 
 }

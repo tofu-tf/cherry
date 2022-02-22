@@ -2,17 +2,15 @@ package cherry.lamr.parse
 
 package term
 
-import cats.parse.Parser
-import Parser.*
-import tofu.syntax.monadic.*
-import cherry.lamr.Lang
-import cherry.fix.Fix
-import cherry.lamr.RecordKey
-import basic.*
-import basic.given
 import cats.data.NonEmptyList
-import types.typeTerm
+import cats.parse.Parser
+import cats.parse.Parser.*
+import cherry.fix.Fix
+import cherry.lamr.{Lang, RecordKey}
 import cherry.lamr.norm.Term
+import cherry.lamr.parse.basic.{*, given}
+import cherry.lamr.parse.types.typeTerm
+import tofu.syntax.monadic.*
 
 val term: Parser[Term] = defer(theTerm)
 
@@ -46,6 +44,8 @@ def indexRecord(elems: NonEmptyList[Either[Term, Term]]): Iterator[Term] =
     .drop(1)
 
 val recordTail = separator *> whitespace *> (recordElement <* whitespace).repSep0(separator *> whitespace)
+
+val builtin = char('$') *> (builtinType.map(Lang.Builtin(_)) | bool.map(Lang.Bool(_)))
 
 val parenElements =
   (whitespace *> (recordElement.spaced ~ recordTail.?).?).map {
