@@ -1,75 +1,71 @@
 package cherry.lamr.parse
 
-import cherry.fix.Fix
-import cherry.lamr.parse.term.source
 import cherry.lamr.{BuiltinType, Lang}
 
-class TermTests extends munit.FunSuite {
-  extension (exp: String)
-    infix def shouldParse(lang: Fix[Lang]) =
-      assertEquals(source.parse(exp), Right(("", lang)))
+class TermTests extends munit.FunSuite with ParseTesting:
+  import Lang.{get, rec, Unit, Bool, Builtin}
 
   test("unit") {
-    "()" shouldParse Lang.Unit
+    "()" shouldParse Unit
   }
 
   test("singleton tuple") {
-    "(1, )" shouldParse Lang.rec(1)
+    "(1, )" shouldParse rec(1)
   }
 
   test("integer tuple") {
-    "(1, 2 ,3)" shouldParse Lang.rec(1, 2, 3)
+    "(1, 2 ,3)" shouldParse rec(1, 2, 3)
   }
 
   test("record") {
-    "(a = 1, b = 2, c = 3)" shouldParse Lang.rec(a = 1, b = 2, c = 3)
+    "(a = 1, b = 2, c = 3)" shouldParse rec(a = 1, b = 2, c = 3)
   }
 
   test("sample application") {
-    "x z" shouldParse Lang.get("x").apply(Lang.get("z"))
+    "x z" shouldParse get("x").apply(get("z"))
   }
 
   test("complex application") {
-    "x (a, b)" shouldParse Lang.get.x.apply(Lang.rec(Lang.get.a, Lang.get.b))
+    "x (a, b)" shouldParse get.x.apply(rec(get.a, get.b))
   }
 
   test("even more complex application") {
-    "x y (z = (), y = x)" shouldParse Lang.get.x.apply(Lang.get.y).apply(Lang.rec(z = Lang.Unit, y = Lang.get.x))
+    "x y (z = (), y = x)" shouldParse get.x.apply(get.y).apply(rec(z = Unit, y = get.x))
   }
 
   test("very complex application") {
-    "foo ( 3, 4 , 5 ) (a = 2, b = 3)" shouldParse Lang.get.foo.apply(Lang.rec(3, 4, 5)).apply(Lang.rec(a = 2, b = 3))
+    "foo ( 3, 4 , 5 ) (a = 2, b = 3)" shouldParse get.foo.apply(rec(3, 4, 5)).apply(rec(a = 2, b = 3))
   }
 
   test("chaining") {
-    "x ; y;z; w" shouldParse Lang.get.x.andThen(Lang.get.y).andThen(Lang.get.z).andThen(Lang.get.w)
+    "x ; y;z; w" shouldParse get.x.andThen(get.y).andThen(get.z).andThen(get.w)
   }
 
   test("chaining applications") {
     "x a; y a b; x y; z" shouldParse
-      Lang.get.x
-        .apply(Lang.get.a)
-        .andThen(Lang.get.y.apply(Lang.get.a).apply(Lang.get.b))
-        .andThen(Lang.get.x.apply(Lang.get.y))
-        .andThen(Lang.get.z)
+      get.x
+        .apply(get.a)
+        .andThen(get.y.apply(get.a).apply(get.b))
+        .andThen(get.x.apply(get.y))
+        .andThen(get.z)
   }
 
   test("paren application") {
-    "a (b c)" shouldParse Lang.get.a.apply(Lang.get.b.apply(Lang.get.c))
+    "a (b c)" shouldParse get.a.apply(get.b.apply(get.c))
   }
 
   test("paren chaining") {
-    "a ; b (c ; d)" shouldParse Lang.get.a |> Lang.get.b.apply(Lang.get.c |> Lang.get.d)
+    "a ; b (c ; d)" shouldParse get.a |> get.b.apply(get.c |> get.d)
   }
 
   test("builtin tests") {
-    "a $true" shouldParse Lang.get.a.apply(Lang.Bool(true))
-    "($false, $str, $float, $int)" shouldParse Lang.rec(
-      Lang.Bool(false),
-      Lang.Builtin(BuiltinType.Str),
-      Lang.Builtin(BuiltinType.Float),
-      Lang.Builtin(BuiltinType.Integer)
+    "a $true" shouldParse get.a.apply(Bool(true))
+    "($false, $str, $float, $int)" shouldParse rec(
+      Bool(false),
+      Builtin(BuiltinType.Str),
+      Builtin(BuiltinType.Float),
+      Builtin(BuiltinType.Integer)
     )
   }
 
-}
+end TermTests

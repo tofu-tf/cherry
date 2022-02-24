@@ -1,6 +1,6 @@
-ThisBuild / scalaVersion := "3.1.1"
+ThisBuild / scalaVersion := Version.scala
 
-ThisBuild / crossScalaVersions := Vector("3.1.1")
+ThisBuild / crossScalaVersions := Vector(Version.scala)
 
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 

@@ -15,7 +15,6 @@ import basic._
 
 val typeSeparator = char(':').as(TypeOptions())
 
-
 val recordFieldtype = (symbolKey, typeSeparator.spaced, term).tupled
 
 val recordType = (char('{') *> recordFieldtype.repSep0(char(',').spaced).spaced0 <* char('}')).map(ts =>
