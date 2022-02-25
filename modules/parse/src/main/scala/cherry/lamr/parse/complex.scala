@@ -21,7 +21,7 @@ private def makeLongArrow(t: Term, terms: NonEmptyList[(Term, Term)]): Term =
 
 val longArrow = (application ~ (arrow ~ application).rep).map(makeLongArrow)
 
-val chain = application.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
+val chain = longArrow.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 
 val theTerm: Parser[Term] = chain
 
