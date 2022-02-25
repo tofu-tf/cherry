@@ -5,7 +5,7 @@ package types
 import cats.parse.Parser
 import Parser._
 import tofu.syntax.monadic._
-import cherry.lamr.Lang
+import cherry.lamr.{Lang, Term}
 import cherry.fix.Fix
 import cherry.lamr.RecordKey
 import cherry.lamr.BuiltinType
@@ -25,3 +25,6 @@ val recordType = (char('{') *> recordFieldtype.repSep0(char(',').spaced).spaced0
 )
 
 val typeTerm = Parser.oneOf(List(builtin, recordType))
+
+val effect = char('[') *> term <* char(']')
+val arrow: Parser[Term] = (char('-') *> effect.?  <* char('>')).map(_.getOrElse(BuiltinType.Any))

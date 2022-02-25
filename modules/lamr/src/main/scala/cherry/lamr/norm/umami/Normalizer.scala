@@ -32,15 +32,14 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
         extType  <- extNorm.asType
       yield ExtendType(baseType, extType)
 
-    case Lang.Function(domain, body) =>
+    case Lang.Function(domain, effect, body) =>
       for
-        domNorm  <- normalize(domain, context)
-        domType  <- domNorm.asType
+        domType  <- bigTypeStep(domain, context)
         domTerm  <- domType.asAbstract
         extCtx   <- context.merge(domTerm)
-        bodyNorm <- normalize(body, extCtx)
-        bodyType <- bodyNorm.asType
-      yield FunctionType(domType, bodyType)
+        bodyType <- bigTypeStep(body, extCtx)
+        effType <- bigTypeStep(effect, context)
+      yield FunctionType(domType, effType, bodyType)
 
     case Lang.Merge(base, ext) =>
       for
