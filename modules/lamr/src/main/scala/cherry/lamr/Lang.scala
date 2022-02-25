@@ -7,16 +7,6 @@ import cherry.utils.SimpleTraversing
 import scala.annotation.targetName
 import scala.language.dynamics
 
-// concat : {I :~ Type, 0: List(I), 1: List(I)} -> List(I)
-// concat (list1, list2)
-// concat (I = int, list1, list2)
-// concat(list1, list2)
-// concat[int](list1, list2)
-// {x: int, y: str} = Extend({x: int} , {y: str}) = {x: int} & {y: str}
-// (x = 1, y = "lol") = Merge((x = 1), (y = "lol")) = (x = 1) .. (y = "lol")
-
-// (x : Nat ** Vec x Int)
-// (0 = 3) .. (0 = 4)    ..  (0 = 1) .. (0 = 2) = (0^3 = 3, 0^2 = 4, 0^1 = 1, 0 = 2)
 enum RecordKey:
   case Symbol(name: String)
   case Index(position: Int)

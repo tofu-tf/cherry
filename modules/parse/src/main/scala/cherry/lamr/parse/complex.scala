@@ -19,9 +19,9 @@ private def makeLongArrow(t: Term, terms: NonEmptyList[(Term, Term)]): Term =
   val (init, last) = collections.swapReverse(t, terms.toList)
   init.foldLeft(last) { case (res, (domain, effect)) => Lang.Function(domain, effect, res).fix }
 
-val longArrow = (term ~ (arrow ~ term).rep).map(makeLongArrow)
+val longArrow = (application ~ (arrow ~ application).rep).map(makeLongArrow)
 
-val chain = longArrow.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
+val chain = application.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 
 val theTerm: Parser[Term] = chain
 
