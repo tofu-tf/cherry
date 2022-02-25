@@ -17,14 +17,10 @@ val parseDependencies2 = libraryDependencies ++= Vector(
   "org.typelevel" %% "cats-parse" % Version.catsParse,
 ).map(_.cross(CrossVersion.for3Use2_13))
 
-val scala3Settings = Vector(
-  scalaVersion       := "3.1.1",
-  crossScalaVersions := Vector("3.1.1"),
-  scalacOptions ++= Vector(
-    "-Yexplicit-nulls",
-    "-encoding",
-    "utf-8",
-  )
+val scala3Settings = scalacOptions ++= Vector(
+  "-Yexplicit-nulls",
+  "-encoding",
+  "utf-8",
 )
 
 val defaultSettings = testDependencies ++ scala3Settings

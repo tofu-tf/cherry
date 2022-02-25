@@ -1,4 +1,6 @@
 object Version {
+  val scala = "3.1.2-RC1"
+
   val scalaTest = "3.2.11"
 
   val munit = "0.7.29"

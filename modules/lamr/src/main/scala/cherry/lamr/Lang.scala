@@ -29,8 +29,6 @@ object TypeOptions:
 enum BuiltinType:
   case Integer, Float, Str, Bool, Any
 
-  given Conversion[BuiltinType, Lang[Nothing]] = Lang.Builtin(_)
-
 enum Lang[+R] extends SimpleTraversing[Lang, R]:
   def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
     case u @ (
@@ -73,6 +71,8 @@ enum Lang[+R] extends SimpleTraversing[Lang, R]:
   case Integer(value: BigInt) extends Lang[Nothing]
   case Bool(value: Boolean) extends Lang[Nothing]
 
+type Term = Fix[Lang]
+
 object Lang:
   extension [G[+x] >: Lang[x]](lang: Lang[Fix[G]]) def fix: Fix[G] = Fix(lang)
 
@@ -90,39 +90,41 @@ object Lang:
   def set[G[+r] >: Lang[r]](key: RecordKey, t: Fix[G]): Fix[G] = Set(key, t).fix
 
   object rec extends Dynamic:
-    def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
+    def applyDynamicNamed(name: "apply")(assocs: (String, Term)*): Term =
       assocs
         .map((name, t) => set(name, t))
         .reduceOption(Merge(_, _).fix)
         .getOrElse(Unit)
 
-    def applyDynamic[G[+r] >: Lang[r]](name: "apply")(assocs: Fix[G]*): Fix[G] =
+    def applyDynamic(name: "apply")(assocs: Term*): Term =
       assocs.zipWithIndex
         .map((t, i) => set(i, t))
         .reduceOption(Merge(_, _).fix)
         .getOrElse(Unit)
 
   object recT extends Dynamic:
-    def applyDynamicNamed[G[+r] >: Lang[r]](name: "apply")(assocs: (String, Fix[G])*): Fix[G] =
+    def applyDynamicNamed(name: "apply")(assocs: (String, Term)*): Term =
       assocs
         .map((name, t) => Record(name, t, TypeOptions()).fix)
         .reduceOption(Extend(_, _).fix)
         .getOrElse(Unit)
 
-  class Call[G[+r] >: Lang[r]](term: Fix[G]) extends Dynamic:
-    def applyDynamicNamed[H[+r] >: G[r]](name: "apply")(assocs: (String, Fix[H])*): Fix[H] =
+  class Call(term: Term) extends Dynamic:
+    def applyDynamicNamed(name: "apply")(assocs: (String, Term)*): Term =
       term.apply(rec.applyDynamicNamed("apply")(assocs*))
 
-  extension [G[+r] >: Lang[r]](term: Fix[G])
-    infix def |>[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
+  extension (term: Fix[Lang])
+    infix def |>(next: Term): Term = Lang.AndThen(term, next).fix
 
-    def andThen[A, H[+r] >: G[r]](next: Fix[H]): Fix[H] = Lang.AndThen(term, next).fix
+    def andThen(next: Term): Term = Lang.AndThen(term, next).fix
 
-    def apply[H[+r] >: G[r]](args: Fix[H]): Fix[H] = rec(term, args) |> Apply
+    def apply(args: Term): Term = rec(term, args) |> Apply
 
-    def merge[H[+r] >: G[r]](ext: Fix[H]): Fix[H] = Merge(term, ext).fix
+    def merge(ext: Term): Term = Merge(term, ext).fix
 
-    def call: Call[G] = Call(term)
+    def call: Call = Call(term)
+
+  given Conversion[BuiltinType, Term] = Lang.Builtin(_)
 
   given Traverse[Lang] = SimpleTraversing.traverseInstance[Lang]
 
