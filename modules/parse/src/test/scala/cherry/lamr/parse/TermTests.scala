@@ -13,7 +13,7 @@ class TermTests extends munit.FunSuite with ParseTesting:
     "(1, )" shouldParse rec(1)
   }
 
-  test("neg singleton tuple"){
+  test("neg singleton tuple") {
     "(-1, )"
   }
 

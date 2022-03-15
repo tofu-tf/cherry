@@ -45,7 +45,7 @@ def indexRecord(elems: NonEmptyList[Either[Term, Term]]): Iterator[Term] =
 
 val recordTail = separator *> whitespace *> (recordElement <* whitespace).repSep0(separator *> whitespace)
 
-val builtin = char('$') *> (builtinType.map(Lang.Builtin(_)) | bool.map(Lang.Bool(_)) | string("type").as(Lang.U) )
+val builtin = char('$') *> (builtinType.map(Lang.Builtin(_)) | bool.map(Lang.Bool(_)) | string("type").as(Lang.U))
 
 val parenElements =
   (whitespace *> (recordElement.spaced ~ recordTail.?).?).map {

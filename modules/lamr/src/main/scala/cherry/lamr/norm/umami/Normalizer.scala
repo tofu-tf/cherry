@@ -38,7 +38,7 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
         domTerm  <- domType.asAbstract
         extCtx   <- context.merge(domTerm)
         bodyType <- bigTypeStep(body, extCtx)
-        effType <- bigTypeStep(effect, context)
+        effType  <- bigTypeStep(effect, context)
       yield FunctionType(domType, effType, bodyType)
 
     case Lang.Merge(base, ext) =>

@@ -22,7 +22,8 @@ private def makeLongArrow(t: Term, terms: List[(Term, Term)]): Term =
 val longArrow: Parser[Term] =
   ((application <* whitespace) ~ (typeArrow ~ (whitespace *> application)).rep0).map(makeLongArrow)
 
-val longLambda = (longArrow <* whitespace).repSep(lambdaArrow <* whitespace).map(_.toList.reduceRight(Lang.Capture(_, _).fix))
+val longLambda =
+  (longArrow <* whitespace).repSep(lambdaArrow <* whitespace).map(_.toList.reduceRight(Lang.Capture(_, _).fix))
 
 val chain = longLambda.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 

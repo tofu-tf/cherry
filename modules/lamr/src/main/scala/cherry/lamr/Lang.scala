@@ -81,7 +81,7 @@ object Lang:
   given Conversion[String, Fix[Lang]]    = Str(_)
   given Conversion[scala.Int, Fix[Lang]] = Integer(_)
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
-  
+
   val U = Universe(TypeOptions.Default)
 
   object get extends Dynamic:
