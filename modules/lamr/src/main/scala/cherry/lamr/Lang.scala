@@ -81,6 +81,8 @@ object Lang:
   given Conversion[String, Fix[Lang]]    = Str(_)
   given Conversion[scala.Int, Fix[Lang]] = Integer(_)
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
+  
+  val U = Universe(TypeOptions.Default)
 
   object get extends Dynamic:
     def apply(key: RecordKey) = GetKey(key, 0)
@@ -125,6 +127,8 @@ object Lang:
     def andThen(next: Term): Term = Lang.AndThen(term, next).fix
 
     def apply(args: Term): Term = rec(term, args) |> Apply
+
+    def lam(body: Term): Term = Capture(term, body).fix
 
     def merge(ext: Term): Term = Merge(term, ext).fix
 

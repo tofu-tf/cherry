@@ -1,11 +1,11 @@
 package cherry.lamr.parse
 
-import cherry.lamr.{BuiltinType, Lang, Term}
+import cherry.lamr.{BuiltinType => BT, Lang, Term}
 
 class TypeTermTests extends munit.FunSuite with ParseTesting:
-  import Lang.{recT, get, Builtin}
+  import Lang.{recT, get, rec, Builtin}
   test("unit") {
-    "{}" shouldParse Lang.Builtin(BuiltinType.Any)
+    "{}" shouldParse BT.Any
   }
 
   test("simple record") {
@@ -13,7 +13,7 @@ class TypeTermTests extends munit.FunSuite with ParseTesting:
   }
 
   test("complex record") {
-    "{a: Z, b: {z: AA, v: {}}}" shouldParse recT(a = get.Z, b = recT(z = get.AA, v = BuiltinType.Any))
+    "{a: Z, b: {z: AA, v: {}}}" shouldParse recT(a = get.Z, b = recT(z = get.AA, v = BT.Any))
   }
 
   test("arrow type") {
@@ -39,4 +39,20 @@ class TypeTermTests extends munit.FunSuite with ParseTesting:
           get.c -- get.ez.apply(get.y).apply(get.u) --> get.d
         )
       )
+  }
+
+  test("lambda") {
+    "{x: $int} => x" shouldParse recT(x = BT.Integer).lam(get.x)
+  }
+
+  test("lambda to arrow type") {
+    "{A: $type} => A -> A" shouldParse recT(A = Lang.U).lam(get.A --> get.A)
+  }
+
+  test("lambda to effect arrow type") {
+    "{A: $type, eff: $type} => A -[eff]> A" shouldParse recT(A = Lang.U, eff = Lang.U).lam(get.A -- get.eff --> get.A)
+  }
+
+  test("long lambda") {
+    "{A: $type} => {x: A} => (z = x)" shouldParse recT(A = Lang.U).lam(recT(x = get.A).lam(rec(z = get.x)))
   }
