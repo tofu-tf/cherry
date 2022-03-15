@@ -7,7 +7,7 @@ import cherry.fix.Fix
 import cherry.lamr.{Lang, RecordKey}
 import cherry.lamr.norm.Term
 import cherry.lamr.parse.basic.{*, given}
-import cherry.lamr.parse.types.{arrow, typeTerm}
+import cherry.lamr.parse.types.{typeArrow, typeTerm}
 import tofu.syntax.monadic.*
 import cats.parse.Parser
 import cats.parse.Parser.char
@@ -15,14 +15,17 @@ import cherry.utils.collections
 
 val application = smallTerm.repSep(whitespace).map(_.reduce(_.apply(_)))
 
-private def makeLongArrow(t: Term, terms: NonEmptyList[(Term, Term)]): Term =
-  val (init, last) = collections.swapReverse(t, terms.toList)
+private def makeLongArrow(t: Term, terms: List[(Term, Term)]): Term =
+  val (init, last) = collections.swapReverse(t, terms)
   init.foldLeft(last) { case (res, (domain, effect)) => Lang.Function(domain, effect, res).fix }
 
-val longArrow = (application ~ (arrow ~ application).rep).map(makeLongArrow)
+val longArrow = ((application  <* whitespace) ~ (typeArrow  ~ (whitespace *> application)).rep0).map(makeLongArrow)
 
 val chain = longArrow.repSep(char(';') *> whitespace).map(_.reduce(_ |> _))
 
 val theTerm: Parser[Term] = chain
 
 val source: Parser[Term] = term.spaced <* end
+
+@main def testc() =
+  println(longArrow.parse("a -> b"))

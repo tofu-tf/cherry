@@ -13,18 +13,22 @@ import cherry.lamr.TypeOptions
 import term._
 import basic._
 
-val typeSeparator = char(':').as(TypeOptions())
+val typeArrow = Parser.defer(theTypeArrow)
 
-val recordFieldtype = (symbolKey, typeSeparator.spaced, term).tupled
+lazy val typeSeparator = char(':').as(TypeOptions())
 
-val recordType = (char('{') *> recordFieldtype.repSep0(char(',').spaced).spaced0 <* char('}')).map(ts =>
+lazy val recordFieldtype = (symbolKey, typeSeparator.spaced, term).tupled
+
+lazy val recordType = (char('{') *> recordFieldtype.repSep0(char(',').spaced).spaced0 <* char('}')).map(ts =>
   ts.iterator
     .map((name, opts, t) => Lang.Record(name, t, opts).fix)
     .reduceOption(Lang.Extend(_, _).fix)
     .getOrElse(Lang.Builtin(BuiltinType.Any))
 )
 
-val typeTerm = Parser.oneOf(List(builtin, recordType))
+lazy val typeTerm = Parser.oneOf(List(builtin, recordType))
 
-val effect = char('[') *> term <* char(']')
-val arrow: Parser[Term] = (char('-') *> effect.?  <* char('>')).map(_.getOrElse(BuiltinType.Any))
+lazy val effect = char('[') *> term <* char(']')
+lazy val theTypeArrow: Parser[Term] = (char('-') *> effect.?  <* char('>')).map(_.getOrElse(BuiltinType.Any))
+
+

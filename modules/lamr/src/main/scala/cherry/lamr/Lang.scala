@@ -118,6 +118,10 @@ object Lang:
   extension (term: Fix[Lang])
     infix def |>(next: Term): Term = Lang.AndThen(term, next).fix
 
+    infix def -->(body: Term): Term = term -- BuiltinType.Any --> body
+
+    infix def --(eff: Term) = ArrowBuilder(term, eff)
+
     def andThen(next: Term): Term = Lang.AndThen(term, next).fix
 
     def apply(args: Term): Term = rec(term, args) |> Apply
@@ -125,6 +129,9 @@ object Lang:
     def merge(ext: Term): Term = Merge(term, ext).fix
 
     def call: Call = Call(term)
+
+  class ArrowBuilder(domain: Term, eff: Term):
+    def -->(body: Term): Term = Lang.Function(domain, eff, body).fix
 
   given Conversion[BuiltinType, Term] = Lang.Builtin(_)
 
