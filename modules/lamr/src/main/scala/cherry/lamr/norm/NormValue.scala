@@ -5,7 +5,16 @@ import cherry.fix.Fix
 import tofu.syntax.*
 import cats.syntax.show.*
 import cherry.utils.{Act, ErrorCtx}
-import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
+import cherry.lamr.norm.umami.{
+  BooleanValue,
+  BuiltinNormType,
+  FloatValue,
+  IntegerValue,
+  Narrow,
+  NormType,
+  StringValue,
+  UnitValue
+}
 
 type Term = Fix[Lang]
 trait Normalizer:
@@ -48,3 +57,15 @@ trait NormValue:
   def asInt: Process[BigInt] = this match
     case IntegerValue(v) => Act.pure(v)
     case _               => Act.error(Cause.BadType(TypeCause.Builtin(BuiltinType.Integer)))
+
+  def asDouble: Process[Double] = this match
+    case FloatValue(v) => Act.pure(v)
+    case _             => Act.error(Cause.BadType(TypeCause.Builtin(BuiltinType.Float)))
+
+  def asBool: Process[Boolean] = this match
+    case BooleanValue(v) => Act.pure(v)
+    case _               => Act.error(Cause.BadType(TypeCause.Builtin(BuiltinType.Bool)))
+
+  def asStr: Process[String] = this match
+    case StringValue(v) => Act.pure(v)
+    case _              => Act.error(Cause.BadType(TypeCause.Builtin(BuiltinType.Str)))

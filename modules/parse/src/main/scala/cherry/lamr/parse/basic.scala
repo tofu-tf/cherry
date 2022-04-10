@@ -20,9 +20,13 @@ val letterOrDigit = letter orElse digit
 
 val identifier = (letter *> letterOrDigit.rep0).string
 
+val frac: Parser[Any] = Parser.char('.') ~ digit
+val exp: Parser[Unit] = (Parser.charIn("eE") ~ Parser.charIn("+-").? ~ digit).void
+
 val integer = Numbers.bigInt
-val float   = Numbers.jsonNumber.mapFilter(_.toDoubleOption)
+val float   = (Numbers.signedIntString ~ (frac | exp)).string.mapFilter(_.toDoubleOption)
 val bool    = (string("true") as true) | (string("false") as false)
+val str     = char('"') *> identifier <* char('"')
 
 val builtinType =
   oneOf(
