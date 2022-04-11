@@ -16,7 +16,7 @@ object RecordKey:
   given Conversion[String, RecordKey] = Symbol(_)
   given Conversion[Int, RecordKey]    = Index(_)
 
-case class LibRef(pack: String, element: Fix[Lang])
+case class LibRef(pack: String, element: Term)
 
 case class TypeOptions(
     infer: Boolean = false,
@@ -30,26 +30,12 @@ enum BuiltinType:
   case Integer, Float, Str, Bool, Any
 
 enum Lang[+R] extends SimpleTraversing[Lang, R]:
-  def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
-    case u @ (
-          _: Universe | _: Builtin | Id | Unit | Apply | _: Str | _: Float | _: Integer | _: Bool | _: External |
-          _: GetKey
-        ) =>
-      F.pure(u)
-    case Extend(base, deps)         => F.map2(f(base), f(deps))(Extend(_, _))
-    case Function(domain, body)     => F.map2(f(domain), f(body))(Function(_, _))
-    case Set(key, term)             => F.map(f(term))(Set(key, _))
-    case Merge(base, deps)          => F.map2(f(base), f(deps))(Merge(_, _))
-    case Narrow(term, typ)          => F.map2(f(term), f(typ))(Narrow(_, _))
-    case AndThen(left, right)       => F.map2(f(left), f(right))(AndThen(_, _))
-    case Capture(domain, body)      => F.map2(f(domain), f(body))(Capture(_, _))
-    case Record(name, typ, options) => F.map(f(typ))(Record(name, _, options))
-
   case Universe(options: TypeOptions) extends Lang[Nothing]
 
   case Record(name: RecordKey, typ: R, options: TypeOptions)
   case Extend(base: R, deps: R)
-  case Function(domain: R, body: R)
+
+  case Function(domain: R, effect: R, body: R)
   case Builtin(bt: BuiltinType) extends Lang[Nothing]
 
   case GetKey(key: RecordKey, up: Int) extends Lang[Nothing]
@@ -61,6 +47,7 @@ enum Lang[+R] extends SimpleTraversing[Lang, R]:
   case Narrow(term: R, typ: R)
 
   case AndThen(left: R, right: R)
+
   case Capture(domain: R, body: R)
   case Apply
 
@@ -71,6 +58,21 @@ enum Lang[+R] extends SimpleTraversing[Lang, R]:
   case Integer(value: BigInt) extends Lang[Nothing]
   case Bool(value: Boolean) extends Lang[Nothing]
 
+  def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
+    case u @ (
+          _: Universe | _: Builtin | Id | Unit | Apply | _: Str | _: Float | _: Integer | _: Bool | _: External |
+          _: GetKey
+        ) =>
+      F.pure(u)
+    case Extend(base, deps)               => F.map2(f(base), f(deps))(Extend(_, _))
+    case Function(domain, effect, result) => F.map3(f(domain), f(effect), f(result))(Function(_, _, _))
+    case Set(key, term)                   => F.map(f(term))(Set(key, _))
+    case Merge(base, deps)                => F.map2(f(base), f(deps))(Merge(_, _))
+    case Narrow(term, typ)                => F.map2(f(term), f(typ))(Narrow(_, _))
+    case AndThen(left, right)             => F.map2(f(left), f(right))(AndThen(_, _))
+    case Capture(domain, body)            => F.map2(f(domain), f(body))(Capture(_, _))
+    case Record(name, typ, options)       => F.map(f(typ))(Record(name, _, options))
+
 type Term = Fix[Lang]
 
 object Lang:
@@ -79,6 +81,8 @@ object Lang:
   given Conversion[String, Fix[Lang]]    = Str(_)
   given Conversion[scala.Int, Fix[Lang]] = Integer(_)
   given Conversion[Boolean, Fix[Lang]]   = Bool(_)
+
+  val U = Universe(TypeOptions.Default)
 
   object get extends Dynamic:
     def apply(key: RecordKey) = GetKey(key, 0)
@@ -116,13 +120,22 @@ object Lang:
   extension (term: Fix[Lang])
     infix def |>(next: Term): Term = Lang.AndThen(term, next).fix
 
+    infix def -->(body: Term): Term = term -- BuiltinType.Any --> body
+
+    infix def --(eff: Term) = ArrowBuilder(term, eff)
+
     def andThen(next: Term): Term = Lang.AndThen(term, next).fix
 
     def apply(args: Term): Term = rec(term, args) |> Apply
 
+    def lam(body: Term): Term = Capture(term, body).fix
+
     def merge(ext: Term): Term = Merge(term, ext).fix
 
     def call: Call = Call(term)
+
+  class ArrowBuilder(domain: Term, eff: Term):
+    def -->(body: Term): Term = Lang.Function(domain, eff, body).fix
 
   given Conversion[BuiltinType, Term] = Lang.Builtin(_)
 
