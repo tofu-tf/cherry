@@ -18,18 +18,18 @@ ThisBuild / githubWorkflowBuildPreamble += WorkflowStep.Sbt(
   name = Some("Check formatting")
 )
 
-ThisBuild / githubWorkflowPublish := Seq(
-  WorkflowStep.Sbt(
-    List("ci-release"),
-    name = Some("Publish artifacts"),
-    env = Map(
-      "PGP_PASSPHRASE"    -> "${{ secrets.PGP_PASSPHRASE }}",
-      "PGP_SECRET"        -> "${{ secrets.PGP_SECRET }}",
-      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
-      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
-    )
-  )
-)
+//ThisBuild / githubWorkflowPublish := Seq(
+//  WorkflowStep.Sbt(
+//    List("ci-release"),
+//    name = Some("Publish artifacts"),
+//    env = Map(
+//      "PGP_PASSPHRASE"    -> "${{ secrets.PGP_PASSPHRASE }}",
+//      "PGP_SECRET"        -> "${{ secrets.PGP_SECRET }}",
+//      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+//      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+//    )
+//  )
+//)
 
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
@@ -62,3 +62,6 @@ ThisBuild / scmInfo                   := Some(
 )
 
 ThisBuild / githubWorkflowEnv += "CI" -> "true"
+
+// true by default, set to false to publish to s01.otlss.sonatype.org
+ThisBuild / tlSonatypeUseLegacyHost := false
