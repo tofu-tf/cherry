@@ -68,7 +68,7 @@ ThisBuild / tlSonatypeUseLegacyHost := false
 
 ThisBuild / githubWorkflowBuild ~= { steps =>
   steps.flatMap {
-    case _ @ WorkflowStep.Sbt(List("mimaReportBinaryIssues"), _, _, _, _, _) => None
-    case step => Some(step)
+    case _ @WorkflowStep.Sbt(List("mimaReportBinaryIssues"), _, _, _, _, _) => None
+    case step                                                               => Some(step)
   }
 }
