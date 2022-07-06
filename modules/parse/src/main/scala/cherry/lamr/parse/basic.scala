@@ -4,7 +4,6 @@ package basic
 
 import cats.parse.{Numbers, Parser, Parser0}
 import Parser.*
-import cats.parse.Numbers.signedIntString
 import tofu.syntax.monadic.*
 import cherry.lamr.{BuiltinType, Lang, RecordKey}
 import cherry.fix.Fix
@@ -21,14 +20,18 @@ val letterOrDigit = letter orElse digit
 
 val identifier = (letter *> letterOrDigit.rep0).string
 
+val frac: Parser[Any] = Parser.char('.') ~ digit
+val exp: Parser[Unit] = (Parser.charIn("eE") ~ Parser.charIn("+-").? ~ digit).void
+
 val signedIntString: Parser[String] =
   (Parser.char('-').?.soft.with1 ~ Numbers.nonNegativeIntString).string
 
 val bigInt: Parser[BigInt] = signedIntString.map(BigInt(_))
 
 val integer = bigInt
-val float   = Numbers.jsonNumber.mapFilter(_.toDoubleOption)
+val float   = (signedIntString ~ (frac | exp)).string.mapFilter(_.toDoubleOption)
 val bool    = (string("true") as true) | (string("false") as false)
+val str     = char('"') *> identifier <* char('"')
 
 val builtinType =
   oneOf(
