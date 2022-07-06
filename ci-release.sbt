@@ -1,4 +1,4 @@
-ThisBuild / tlBaseVersion := "0.8"
+ThisBuild / tlBaseVersion := "0.0"
 
 ThisBuild / scalaVersion := Version.scala
 
