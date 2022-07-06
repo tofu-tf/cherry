@@ -1,3 +1,5 @@
+ThisBuild / tlBaseVersion := "0.8"
+
 ThisBuild / scalaVersion := Version.scala
 
 ThisBuild / crossScalaVersions := Vector(Version.scala)
@@ -28,7 +30,6 @@ ThisBuild / githubWorkflowPublish := Seq(
     )
   )
 )
-ThisBuild / versionScheme         := Some("semver-spec")
 
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
@@ -46,10 +47,10 @@ ThisBuild / developers       := List(
   Developer("skye17", "Anastasiya Ermolaeva", "a.ermolaeva@tinkoff.ru", url("https://github.com/skye17"))
 )
 
-ThisBuild / organization     := "ru.tinkoff"
-ThisBuild / organizationName := "Tinkoff"
+ThisBuild / organization     := "tf.tofu"
+ThisBuild / organizationName := "Tofu"
 
-ThisBuild / homepage := Some(url("https://github.com/Tinkoff/cherry"))
+ThisBuild / homepage := Some(url("https://github.com/tf-tofu/cherry"))
 
 ThisBuild / description := "Universal Data design and transform language core"
 
