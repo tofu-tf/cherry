@@ -33,7 +33,7 @@ ThisBuild / githubWorkflowPublish := Seq(
 
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-ThisBuild / developers       := List(
+ThisBuild / developers            := List(
   Developer("KS2003", "Yana Karpysheva", "karpyshev03@mail.ru", url("https://github.com/KS2003")),
   Developer(
     "mikhailchuryakov",
@@ -47,8 +47,8 @@ ThisBuild / developers       := List(
   Developer("skye17", "Anastasiya Ermolaeva", "a.ermolaeva@tinkoff.ru", url("https://github.com/skye17"))
 )
 
-ThisBuild / organization     := "tf.tofu"
-ThisBuild / organizationName := "Tofu"
+ThisBuild / organization          := "tf.tofu"
+ThisBuild / organizationName      := "Tofu"
 
 ThisBuild / homepage := Some(url("https://github.com/tf-tofu/cherry"))
 
