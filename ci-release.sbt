@@ -66,4 +66,9 @@ ThisBuild / githubWorkflowEnv += "CI" -> "true"
 // true by default, set to false to publish to s01.otlss.sonatype.org
 ThisBuild / tlSonatypeUseLegacyHost := false
 
-ThisBuild / mimaReportBinaryIssues := {}
+ThisBuild / githubWorkflowBuild ~= { steps =>
+  steps.flatMap {
+    case _ @ WorkflowStep.Sbt(List("mimaReportBinaryIssues"), _, _, _, _, _) => None
+    case step => Some(step)
+  }
+}
