@@ -56,8 +56,8 @@ ThisBuild / description := "Universal Data design and transform language core"
 
 ThisBuild / scmInfo                   := Some(
   ScmInfo(
-    url("https://github.com/Tinkoff/cherry"),
-    "git@github.com:Tinkoff/cherry.git"
+    url("https://github.com/tofu-tf/cherry"),
+    "git@github.com:tofu-tf/cherry.git"
   )
 )
 
