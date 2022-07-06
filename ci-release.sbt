@@ -65,3 +65,5 @@ ThisBuild / githubWorkflowEnv += "CI" -> "true"
 
 // true by default, set to false to publish to s01.otlss.sonatype.org
 ThisBuild / tlSonatypeUseLegacyHost := false
+
+ThisBuild / mimaReportBinaryIssues := {}
