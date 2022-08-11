@@ -14,28 +14,33 @@ val lamrDependencies2 = libraryDependencies ++= Vector(
 ).map(_.cross(CrossVersion.for3Use2_13))
 
 val parseDependencies2 = libraryDependencies ++= Vector(
-  "org.typelevel" %% "cats-parse" % Version.catsParse,
-).map(_.cross(CrossVersion.for3Use2_13))
+)
 
 val scala3Settings = scalacOptions ++= Vector(
   "-Yexplicit-nulls",
+  "-Yshow-suppressed-errors",
   "-encoding",
   "utf-8",
 )
 
 val defaultSettings = testDependencies ++ scala3Settings
 
+lazy val fix   = project
+  .in(modules / "fix")
+  .settings(name := "cherry-fix")
+  .settings(lamrDependencies2)
+
 lazy val lamr  = project
   .in(modules / "lamr")
   .settings(name := "cherry-lamr")
-  .settings(lamrDependencies2)
+  .dependsOn(fix)
   .settings(defaultSettings)
 
 lazy val parse = project
   .in(modules / "parse")
   .settings(name := "cherry-parse")
   .settings(defaultSettings)
-  .settings(parseDependencies2)
+  .settings(libraryDependencies += "org.typelevel" %% "cats-parse" % Version.catsParse cross CrossVersion.for3Use2_13)
   .dependsOn(lamr)
 
 lazy val tests = project

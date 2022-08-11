@@ -1,8 +1,9 @@
 package cherry.lamr
 
 import cherry.lamr.norm.umami.{RecordValue, UmamiNormalizer, UnitValue}
-import cherry.lamr.norm.{BuiltinLibrary, Cause, Error, NormValue, Normalizer, Term, State}
+import cherry.lamr.norm.{BuiltinLibrary, Cause, Error, NormValue, Normalizer, State, Term}
 import cherry.fix.Fix
+import cherry.fix.Fix.Fix
 import cherry.lamr.norm.ints.IntsLibrary
 import munit.Clue
 

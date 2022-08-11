@@ -1,6 +1,7 @@
 package cherry.lamr
 import cats.{Applicative, Eval, Traverse}
 import cherry.fix.Fix
+import cherry.fix.Fix.Fix
 import cherry.lamr.Lang.{Capture, External, GetKey, Universe}
 import cherry.utils.SimpleTraversing
 

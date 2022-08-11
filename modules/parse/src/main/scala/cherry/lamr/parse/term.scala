@@ -6,6 +6,7 @@ import cats.data.NonEmptyList
 import cats.parse.Parser
 import cats.parse.Parser.*
 import cherry.fix.Fix
+import cherry.fix.Fix.Fix
 import cherry.lamr.{Lang, RecordKey}
 import cherry.lamr.norm.Term
 import cherry.lamr.parse.basic.{*, given}
