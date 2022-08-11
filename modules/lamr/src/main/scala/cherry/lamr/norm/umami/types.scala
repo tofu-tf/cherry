@@ -4,7 +4,6 @@ package umami
 import cherry.fix.Fix
 import cherry.lamr.{BuiltinType, Lang, RecordKey, TypeOptions}
 import cherry.utils.{Act, LayeredMap}
-import tofu.syntax.parallel.given
 
 import scala.collection.immutable.{IntMap, TreeMap}
 

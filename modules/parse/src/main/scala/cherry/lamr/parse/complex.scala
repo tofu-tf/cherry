@@ -8,7 +8,6 @@ import cherry.lamr.{Lang, RecordKey}
 import cherry.lamr.norm.Term
 import cherry.lamr.parse.basic.{*, given}
 import cherry.lamr.parse.types.{typeArrow, typeTerm, lambdaArrow}
-import tofu.syntax.monadic.*
 import cats.parse.Parser
 import cats.parse.Parser.char
 import cherry.utils.collections

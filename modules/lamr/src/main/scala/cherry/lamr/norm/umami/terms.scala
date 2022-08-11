@@ -1,16 +1,14 @@
 package cherry.lamr.norm
 package umami
 
-import cherry.fix.Fix
+import cherry.fix.{Fix, Traverse}
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey, TypeOptions}
 import cherry.utils.{Act, ErrorCtx, LayeredMap}
 
 import scala.collection.immutable.TreeMap
 import scala.collection.immutable.IntMap
 import cherry.lamr.norm.umami.RecordValue.fromVector
-import cats.syntax.traverseFilter.given
-import tofu.syntax.collections.given
-import tofu.syntax.foption.given
+import cherry.fix.Functor.given
 
 case class Abstract(term: Term, tpe: NormType) extends NormValue:
   def toTerm = term
@@ -50,7 +48,7 @@ trait RecordValueBase extends NormValue:
   protected def narrowField(
       domainMap: LayeredMap[RecordKey, NormType]
   )(name: RecordKey, fieldValue: NormValue): Process[Option[(RecordKey, NormValue)]] =
-    domainMap.get(name, 0).traverse(fieldValue.narrow).mapIn(name -> _)
+    domainMap.get(name, 0).traverse(fieldValue.narrow).map(_.map(name -> _))
 
   override def narrow(domain: NormType): Process[NormValue]     =
     for

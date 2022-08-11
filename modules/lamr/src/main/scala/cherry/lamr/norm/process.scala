@@ -1,10 +1,5 @@
 package cherry.lamr.norm
 
-import tofu.data.{CalcM, CalcT}
-import cats.Parallel
-import cats.arrow.FunctionK
-import cats.Applicative
-import cats.syntax.applicative
 import cherry.fix.Fix.Fix
 import cherry.lamr.norm.umami.{NormType, Variable}
 import cherry.utils.Act

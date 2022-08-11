@@ -5,7 +5,6 @@ package basic
 import cats.parse.{Numbers, Parser, Parser0}
 import Parser.*
 import cats.parse.Numbers.signedIntString
-import tofu.syntax.monadic.*
 import cherry.lamr.{BuiltinType, Lang, RecordKey}
 import cherry.fix.Fix
 

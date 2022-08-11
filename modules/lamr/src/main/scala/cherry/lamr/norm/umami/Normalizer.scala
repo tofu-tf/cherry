@@ -1,10 +1,8 @@
 package cherry.lamr.norm
 package umami
 
-import cats.syntax.parallel.given
 import cherry.lamr.{Lang, LibRef, TypeOptions}
 import cherry.utils.Act
-import tofu.syntax.monadic.given
 class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 

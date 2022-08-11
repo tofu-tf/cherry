@@ -2,7 +2,6 @@ package cherry.lamr.norm
 
 import cherry.lamr.{Lang, LibRef, RecordKey}
 import cherry.utils.{Act, LayeredMap}
-import cats.kernel.Monoid
 import cherry.lamr.norm.ints.IntsLibrary
 import cherry.lamr.norm.umami.{RecordValue, RecordValueBase}
 

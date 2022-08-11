@@ -1,11 +1,11 @@
 package cherry.utils
 
+import cherry.fix.Monad
+
 import scala.annotation.{tailrec, targetName}
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
-import cats.arrow.FunctionK
-import cats.syntax.parallel.given
-import cats.{Applicative, Eval, Monad, Parallel, StackSafeMonad}
+
 
 enum Act[-State, +Res]:
   case Action(what: State => Res | Null)
@@ -84,21 +84,22 @@ object Act:
       case Left(e)  => error(e)
       case Right(a) => pure(a)
 
-  given [S, E]: StackSafeMonad[[R] =>> Act[S, R]] with
+  given [S]: Monad[[R] =>> Act[S, R]] with
     def pure[A](a: A)                                   = Act.pure(a)
-    def flatMap[A, B](fa: Act[S, A])(f: A => Act[S, B]) = fa.flatMap(f)
+    extension[A](fa: Act[S, A])
+      def flatMap[B](f: A => Act[S, B]) = fa.flatMap(f)
 
-  given [S]: Parallel[[R] =>> Act[S, R]] with FunctionK[[R] =>> Act[S, R], [R] =>> Act[S, R]] with
-    type F[A] = Act[S, A]
-    def apply[A](a: Act[S, A]) = a
-    def parallel               = this
-    def sequential             = this
-    val monad                  = summon
-
-    val applicative: Applicative[F] = new:
-      def pure[A](a: A): Act[S, A]                                   = Act.pure(a)
-      def ap[A, B](ff: F[A => B])(fa: F[A]): F[B]                    = map2(ff, fa)(_(_))
-      override def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C) = fa.map2Par(fb)(f)
+//  given [S]: Parallel[[R] =>> Act[S, R]] with FunctionK[[R] =>> Act[S, R], [R] =>> Act[S, R]] with
+//    type F[A] = Act[S, A]
+//    def apply[A](a: Act[S, A]) = a
+//    def parallel               = this
+//    def sequential             = this
+//    val monad                  = summon
+//
+//    val applicative: Applicative[F] = new:
+//      def pure[A](a: A): Act[S, A]                                   = Act.pure(a)
+//      def ap[A, B](ff: F[A => B])(fa: F[A]): F[B]                    = map2(ff, fa)(_(_))
+//      override def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C) = fa.map2Par(fb)(f)
 
   trait Raising[E]:
     def error(err: => E): Any

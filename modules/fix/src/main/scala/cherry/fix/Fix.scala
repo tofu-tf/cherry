@@ -1,7 +1,7 @@
 package cherry.fix
 
-import cats.{Eval, Traverse}
-import cats.implicits.given
+import scala.util.control.TailCalls
+import scala.util.control.TailCalls.TailRec
 
 object Fix:
   opaque type Fix[+G[+_]] >: G[Nothing] <: G[Any] = G[Any]
@@ -16,20 +16,14 @@ object Fix:
     def fold[R](f: G[R] => R)(using Functor[G]): R =
       f(fix.unpack.map(_.fold(f)))
 
-//    def foldDefer[R](f: G[Eval[R]] => Eval[R])(using Traverse[G]): Eval[R] =
-//      Eval.defer(f(fix.unpack.map(_.foldDefer(f))))
-//
-//    def folds[R](f: G[R] => R)(using Traverse[G]): R =
-//      fix.foldDefer[R](_.sequence.map(f)).value
-//
-//    def foldHist[R](f: G[Cofree[G, R]] => Eval[R])(using Traverse[G]): Cofree[G, R] =
-//      val gc = Eval.later(fix.unpack.map(_.foldHist(f)))
-//      Cofree(gc.flatMap(f).memoize, gc)
-//    end foldHist
+    def foldDefer[R](f: G[TailRec[R]] => TailRec[R])(using Traverse[G]): TailRec[R] =
+      tailcall(f(fix.unpack.map(_.foldDefer(f))))
 
-//  given [F[+_]](using fdisplay: DisplayK[F]): Display[Fix[F]] with
-//    given Display[Fix[F]]                              = this
-//    val dispF: Display[F[Fix[F]]]                      = fdisplay.displayWith[Fix[F]]
-//    def displayBuild(cfg: Display.Config, fix: Fix[F]) = dispF.displayBuild(cfg, fix.unpack)
+    def folds[R](f: G[R] => R)(using Traverse[G]): R =
+      fix.foldDefer[R](_.sequence.map(f)).result
 
+    def foldHist[R](f: G[Cofree[G, R]] => TailRec[R])(using Traverse[G]): Cofree[G, R] =
+      val gc = delay(fix.unpack.map(_.foldHist(f)))
+      Cofree(gc.flatMap(f).memoize, gc)
+    end foldHist
 end Fix

@@ -1,20 +1,21 @@
-//package cherry.fix
-//
-//import cats.{Comonad, Eval, Functor}
-//import cats.implicits.given
-//
-//final case class Cofree[+F[+_], +R](head: Eval[R], tail: Eval[F[Cofree[F, R]]])
-//
-//object Cofree:
-//  given [F[+_]: Functor]: Comonad[[A] =>> Cofree[F, A]] with
-//    def extract[A](cf: Cofree[F, A]): A                                       = cf.head.value
-//    def map[A, B](fa: Cofree[F, A])(f: A => B): Cofree[F, B]                  =
-//      Cofree(
-//        fa.head.map(f),
-//        fa.tail.map(_.map(map(_)(f)))
-//      )
-//    def coflatMap[A, B](fa: Cofree[F, A])(f: Cofree[F, A] => B): Cofree[F, B] =
-//      Cofree(
-//        Eval.later(f(fa)),
-//        fa.tail.map(_.map(coflatMap(_)(f)))
-//      )
+package cherry.fix
+
+import scala.util.control.TailCalls
+import scala.util.control.TailCalls.TailRec
+
+final case class Cofree[+F[+_], +R](head: TailRec[R], tail: TailRec[F[Cofree[F, R]]])
+
+object Cofree:
+  given [F[+_]: Functor]: Comonad[[A] =>> Cofree[F, A]] with
+    extension [A](cf: Cofree[F, A])
+      def extract: A                                    = cf.head.result
+      override def map[B](f: A => B): Cofree[F, B]      =
+        Cofree(
+          cf.head.map(f),
+          cf.tail.map(_.map(_.map(f)))
+        )
+      def cobind[B](f: Cofree[F, A] => B): Cofree[F, B] =
+        Cofree(
+          delay(f(cf)),
+          cf.tail.map(_.map(_.cobind(f)))
+        )

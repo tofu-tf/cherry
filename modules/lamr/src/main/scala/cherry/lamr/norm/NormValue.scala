@@ -2,8 +2,6 @@ package cherry.lamr.norm
 
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 import cherry.fix.Fix
-import tofu.syntax.*
-import cats.syntax.show.*
 import cherry.fix.Fix.Fix
 import cherry.utils.{Act, ErrorCtx}
 import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
