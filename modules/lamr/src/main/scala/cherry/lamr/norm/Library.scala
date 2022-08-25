@@ -2,7 +2,10 @@ package cherry.lamr.norm
 
 import cherry.lamr.{Lang, LibRef, RecordKey}
 import cherry.utils.{Act, LayeredMap}
+import cherry.lamr.norm.bools.BooleansLibrary
+import cherry.lamr.norm.floats.FloatsLibrary
 import cherry.lamr.norm.ints.IntsLibrary
+import cherry.lamr.norm.strs.StringsLibrary
 import cherry.lamr.norm.umami.{RecordValue, RecordValueBase}
 
 trait Library:
@@ -17,7 +20,7 @@ class LibraryPack(includes: Map[String, Library]) extends Library:
 
 end LibraryPack
 
-private def builtins          = Vector[NameResolutionLibrary](IntsLibrary)
+private def builtins          = Vector[NameResolutionLibrary](BooleansLibrary, FloatsLibrary, IntsLibrary, StringsLibrary)
 private def builtinMap        = builtins.iterator.map(bi => bi.name -> bi).toMap
 private def builtinLayeredMap = LayeredMap.fromVector(builtins.map(bi => (bi.name: RecordKey) -> bi))
 

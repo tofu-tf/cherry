@@ -27,6 +27,8 @@ val symbolTerm: Parser[Fix[Lang]] =
     case (key, Some(t)) => Lang.set(key, t)
   }
 
+val listTerm = char('[') *> listSyntax <* char(']')
+
 def mergeAll(terms: IterableOnce[Fix[Lang]]): Fix[Lang] =
   terms.iterator.reduceOption(Lang.Merge(_, _).fix).getOrElse(Lang.Unit)
 
@@ -58,7 +60,15 @@ val recordTerm = char('(') *> parenElements <* char(')')
 
 val integerTerm = integer.map(Lang.Integer(_))
 
-val smallTerm = oneOf(List(integerTerm, recordTerm, symbolTerm, typeTerm))
+val floatTerm = float.map(Lang.Float(_))
+
+val booleanTerm = bool.map(Lang.Bool(_))
+
+val strTerm = str.map(Lang.Str(_))
+
+val primitiveTypes = oneOf(List(floatTerm.backtrack | integerTerm, booleanTerm, strTerm))
+
+val smallTerm = oneOf(List(primitiveTypes, listTerm, recordTerm, symbolTerm, typeTerm))
 
 @main def testa() =
 
