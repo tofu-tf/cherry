@@ -2,7 +2,14 @@ package cherry.lamr.norm
 package umami
 
 import cherry.lamr.{Lang, LibRef, TypeOptions}
-import cherry.utils.Act
+import cherry.utils.{Act, ActMethods, Raising}
+
+case class NormState(context: NormValue, state: State)
+
+object NormState:
+  given Raising[NormState, Cause] with
+    extension (s: NormState) def raise(e: => Cause) = s.state.raise(e)
+
 class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 
@@ -12,9 +19,24 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
   private def bigTypeStep(term: Term, context: NormValue): Process[NormType] =
     normalize(term, context).flatMap(_.asType)
 
+  private def bigStepOnce(lang: Lang[Process[NormValue]]): Process[NormValue]    = lang match
+    case Lang.External(ref) => library.resolve(ref, this)
+    case Lang.Universe(opts) => Process.pure(UniverseType(opts))
+    case Lang.Builtin(bt) => Process.pure(BuiltinNormType(bt))
+
+//    case Lang.Extend(baseNorm, baseExt) =>
+//      for
+//        baseNorm <- normalize(tb, context)
+//        baseType <- baseNorm.asType
+//        absBase <- baseType.asAbstract
+//        extCtx <- context.merge(absBase)
+//        extNorm <- normalize(te, extCtx)
+//        extType <- extNorm.asType
+//      yield ExtendType(baseType, extType)
+
   private def bigStep(term: Term, context: NormValue): Process[NormValue]    = term.unpack match
 
-    case Lang.External(ref) => library.resolve(context, ref, this)
+    case Lang.External(ref) => library.resolve(ref, this)
 
     case Lang.Universe(opts) => Act.pure(UniverseType(opts))
 

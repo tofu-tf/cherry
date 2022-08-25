@@ -3,7 +3,7 @@ package cherry.lamr.norm
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey}
 import cherry.fix.Fix
 import cherry.fix.Fix.Fix
-import cherry.utils.{Act, ErrorCtx}
+import cherry.utils.{Act, Raising}
 import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, UnitValue}
 
 type Term = Fix[Lang]
@@ -11,8 +11,6 @@ trait Normalizer:
   def normalize(term: Term, context: NormValue): Process[NormValue]
 
 trait NormValue:
-  given ErrorCtx[State] = _.value = Some(this)
-
   def toTerm: Term
 
   def view(context: NormValue): Term = toTerm
@@ -25,7 +23,7 @@ trait NormValue:
 
   def isAbstract: Boolean = false
 
-  def apply(term: NormValue): Process[NormValue] = Act.error(Cause.BadType(TypeCause.Function))
+  def apply(term: NormValue): Process[NormValue] = Process.error(Cause.BadType(TypeCause.Function))
 
   def get(key: RecordKey, up: Int): Process[NormValue] =
     Act.error(Cause.BadType(TypeCause.Record))

@@ -3,7 +3,7 @@ package umami
 
 import cherry.fix.{Fix, Traverse}
 import cherry.lamr.{BuiltinType, Lang, LibRef, RecordKey, TypeOptions}
-import cherry.utils.{Act, ErrorCtx, LayeredMap}
+import cherry.utils.{Act, Raising, LayeredMap}
 
 import scala.collection.immutable.TreeMap
 import scala.collection.immutable.IntMap
@@ -42,7 +42,6 @@ trait RecordValueBase extends NormValue:
     case _                    => super.merge(term)
 
   override def get(key: RecordKey, up: Int): Process[NormValue] =
-    val z = summon[ErrorCtx[State]]
     Act.option(map.get(key, up), Cause.MissingKey(key))
 
   protected def narrowField(

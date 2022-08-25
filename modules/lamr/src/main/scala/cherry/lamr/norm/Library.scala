@@ -6,13 +6,13 @@ import cherry.lamr.norm.ints.IntsLibrary
 import cherry.lamr.norm.umami.{RecordValue, RecordValueBase}
 
 trait Library:
-  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer): Process[NormValue]
+  def resolve(ref: LibRef, normalizer: Normalizer): Process[NormValue]
 
 class LibraryPack(includes: Map[String, Library]) extends Library:
-  def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer) =
+  def resolve(ref: LibRef, normalizer: Normalizer) =
     for
-      lib  <- Act.option(includes.get(ref.pack), Cause.MissingLibrary(ref.pack))
-      term <- lib.resolve(context, ref, normalizer)
+      lib  <- Process.option(includes.get(ref.pack), Cause.MissingLibrary(ref.pack))
+      term <- lib.resolve(ref, normalizer)
     yield term
 
 end LibraryPack
@@ -28,7 +28,7 @@ trait NameResolutionLibrary(val name: String) extends Library with NormValue:
 
   override def toTerm: Term = Lang.External(LibRef(name, Lang.get(0)))
 
-  override def resolve(context: NormValue, ref: LibRef, normalizer: Normalizer): Process[NormValue] =
+  override def resolve(ref: LibRef, normalizer: Normalizer): Process[NormValue] =
     ref.element.unpack match
       case Lang.get(key @ (RecordKey.Index(0) | _: RecordKey.Symbol)) => getKey(key)
       case _                                                          => Act.error(Cause.BadRef(ref))
