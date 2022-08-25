@@ -29,7 +29,7 @@ case object BuiltinLibrary extends LibraryPack(builtinMap) with RecordValueBase:
 
 trait NameResolutionLibrary(val name: String) extends Library with NormValue:
 
-  override def toTerm: Term = Lang.External(LibRef(name, Lang.get(0)))
+  override def toTerm: Process[Term] = Process.pure(Lang.External(LibRef(name, Lang.get(0))))
 
   override def resolve(ref: LibRef, normalizer: Normalizer): Process[NormValue] =
     ref.element.unpack match

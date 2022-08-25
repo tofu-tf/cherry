@@ -20,9 +20,7 @@ trait Normalizer:
   def normalize(term: Term): Process[NormValue]
 
 trait NormValue:
-  def toTerm: Term
-
-  def view(context: NormValue): Term = toTerm
+  def toTerm: Process[Term]
 
   def headNorm: Process[NormValue] = Act.pure(this)
 

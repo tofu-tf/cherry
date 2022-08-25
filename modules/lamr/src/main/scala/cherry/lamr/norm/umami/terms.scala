@@ -8,40 +8,41 @@ import cherry.utils.{Act, Raising, LayeredMap}
 import scala.collection.immutable.TreeMap
 import scala.collection.immutable.IntMap
 import cherry.lamr.norm.umami.RecordValue.fromVector
-import cherry.fix.Functor.given
+import cherry.fix.Functor
+import cherry.fix.Functor.{given Functor[Vector], given Functor[Option]}
 
 case class Abstract(term: Term, tpe: NormType) extends NormValue:
-  def toTerm = term
+  def toTerm = Process.pure(term)
 
   override def isAbstract = true
 
-  private def make(term: Term, tpe: Process[NormType]): Process[NormValue] =
-    tpe.map(Abstract(term, _))
+  private def make(term: Process[Term], tpe: Process[NormType]): Process[NormValue] =
+    term.map2Par(tpe)(Abstract(_, _))
 
-  override def apply(arg: NormValue)                                       =
-    make(term |> arg.toTerm, tpe.applied(arg))
+  override def apply(arg: NormValue)                                                =
+    make(arg.toTerm.map(term |> _), tpe.applied(arg))
 
-  override def get(key: RecordKey, up: Int)                                =
-    make(term |> Lang.GetKey(key, up), tpe.got(key, up))
+  override def get(key: RecordKey, up: Int)                                         =
+    make(Act.pure(term |> Lang.GetKey(key, up)), tpe.got(key, up))
 
 end Abstract
 
 trait RecordValueBase extends NormValue:
   def map: LayeredMap[RecordKey, NormValue]
 
-  def toTerm = joinAll(map.journal.iterator.map(toRecord))
+  def toTerm = map.journal.traverse(toRecord).map(joinAll)
 
-  private def toRecord(key: RecordKey, value: NormValue): Term  =
-    Lang.set(key, value.toTerm)
+  private def toRecord(key: RecordKey, value: NormValue): Process[Term] =
+    value.toTerm.map(Lang.set(key, _))
 
-  private def joinAll(it: IterableOnce[Term]): Term             =
+  private def joinAll(it: IterableOnce[Term]): Term                     =
     it.iterator.reduceOption((rec, set) => Lang.Merge(rec, set).fix).getOrElse(Lang.Unit)
 
-  override def merge(term: NormValue): Process[NormValue]       = term match
+  override def merge(term: NormValue): Process[NormValue]               = term match
     case ext: RecordValueBase => Act.pure(fromVector(map.journal ++ ext.map.journal))
     case _                    => super.merge(term)
 
-  override def get(key: RecordKey, up: Int): Process[NormValue] =
+  override def get(key: RecordKey, up: Int): Process[NormValue]         =
     Act.option(map.get(key, up), Cause.MissingKey(key))
 
   protected def narrowField(
@@ -49,7 +50,7 @@ trait RecordValueBase extends NormValue:
   )(name: RecordKey, fieldValue: NormValue): Process[Option[(RecordKey, NormValue)]] =
     domainMap.get(name, 0).traverse(fieldValue.narrow).map(_.map(name -> _))
 
-  override def narrow(domain: NormType): Process[NormValue]     =
+  override def narrow(domain: NormType): Process[NormValue]             =
     for
       ts  <- domain.fieldTypes
       dmap = LayeredMap.fromVector(ts)
@@ -67,31 +68,42 @@ object RecordValue:
 
   def from(kvs: (RecordKey, NormValue)*) = fromVector(kvs.toVector)
 
-case class Closure(context: NormValue, body: Term, domain: NormType, norm: Normalizer) extends NormValue:
-  def toTerm: Term = view(UnitValue)
+case class Closure(context: NormValue, body: Process[NormValue], domain: NormType) extends NormValue:
 
-  override def view(newContext: NormValue): Term =
-    val func = Lang.Capture(domain.toTerm, body).fix
-    if context == newContext then func else context.toTerm |> func
+  private def rebuild: Process[NormValue] =
+    for
+      abs  <- domain.asAbstract
+      full <- context.merge(abs)
+      res  <- body.locally(_.context = full)
+    yield res
 
-  override def apply(arg: NormValue)             =
+  private def view: Process[NormValue]    =
+    Process.context.flatMap(newCtx => if context == context then body else rebuild)
+
+  def toTerm: Process[Term]          =
+    for
+      dom  <- domain.toTerm
+      body <- view >>= (_.toTerm)
+    yield Lang.Capture(dom, body).fix
+
+  override def apply(arg: NormValue) =
     for
       narrowArg   <- arg.narrow(domain)
       fullContext <- context.merge(narrowArg)
-      res         <- norm.normalize(body).locally(_.context = fullContext)
+      res         <- body.locally(_.context = fullContext)
     yield res
 end Closure
 
-case class Merge(base: NormValue, ext: NormValue)                                      extends NormValue:
-  def toTerm = Lang.Extend(base.toTerm, ext.toTerm).fix
+case class Merge(base: NormValue, ext: NormValue)    extends NormValue:
+  def toTerm = base.toTerm.parMap2(ext.toTerm)(Lang.Extend(_, _).fix)
 
   override def merge(ext2: NormValue) = ext.merge(ext2).flatMap(base.merge)
 
-case class Narrow(base: NormValue, expect: NormType)                                   extends NormValue:
-  def toTerm = Lang.Narrow(base.toTerm, expect.toTerm).fix
+case class Narrow(base: NormValue, expect: NormType) extends NormValue:
+  def toTerm = base.toTerm.map2Par(expect.toTerm)(Lang.Narrow(_, _).fix)
 
-case object UnitValue                                                                  extends NormValue:
-  def toTerm = Lang.Unit
+case object UnitValue                                extends NormValue:
+  val toTerm = Process.pure(Lang.Unit)
 
   val pure = Act.pure(this)
 
@@ -108,18 +120,18 @@ trait BuiltinTypeValue(bt: BuiltinType)     extends NormValue:
       case _                        => super.narrow(domain)
 
 case class Variable(id: Long, hint: String) extends NormValue:
-  def toTerm = Lang.External(LibRef("variable", Lang.Integer(id)))
+  def toTerm = Process.pure(Lang.External(LibRef("variable", Lang.Integer(id))))
 
 case class IntegerValue(value: BigInt)      extends BuiltinTypeValue(BuiltinType.Integer):
-  def toTerm = Lang.Integer(value)
+  def toTerm = Process.pure(Lang.Integer(value))
 
 case class StringValue(value: String)       extends BuiltinTypeValue(BuiltinType.Str):
-  def toTerm = Lang.Str(value)
+  def toTerm = Process.pure(Lang.Str(value))
 
 case class FloatValue(value: Double)        extends BuiltinTypeValue(BuiltinType.Float):
 
-  def toTerm = Lang.Float(value)
+  def toTerm = Process.pure(Lang.Float(value))
 
 case class BooleanValue(value: Boolean) extends BuiltinTypeValue(BuiltinType.Bool):
 
-  def toTerm = Lang.Bool(value)
+  def toTerm = Process.pure(Lang.Bool(value))

@@ -6,6 +6,7 @@ import cherry.utils.Act.Local
 import scala.annotation.{tailrec, targetName}
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
+import cherry.fix.Parallel
 
 enum Act[-State, +Res]:
   case Local[-S1, S2, +Res](act: Act[S2, Res], f: S1 => S2) extends Act[S1, Res]
@@ -93,9 +94,11 @@ object Act:
       case Left(e)  => error(e)
       case Right(a) => pure(a)
 
-  given [S]: Monad[[R] =>> Act[S, R]] with
-    def pure[A](a: A)                                              = Act.pure(a)
-    extension [A](fa: Act[S, A]) def flatMap[B](f: A => Act[S, B]) = fa.flatMap(f)
+  given [S]: Monad[[R] =>> Act[S, R]] with Parallel[[R] =>> Act[S, R]] with
+    def pure[A](a: A) = Act.pure(a)
+    extension [A](fa: Act[S, A])
+      def flatMap[B](f: A => Act[S, B])                = fa.flatMap(f)
+      def parMap2[B, C](fb: Act[S, B])(f: (A, B) => C) = fa.map2Par(fb)(f)
 
   extension [S, A](state: Act[S, A]) def locally(f: S => S): Act[S, A] = Act.Local(state, f)
 end Act

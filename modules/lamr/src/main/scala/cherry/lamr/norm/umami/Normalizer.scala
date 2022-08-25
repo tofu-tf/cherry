@@ -27,6 +27,27 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
         extType  <- extNorm.asType
       yield ExtendType(baseType, extType)
 
+    case Lang.Function(domain, effect, body) =>
+      for
+        domType  <- domain >>= (_.asType)
+        domAbs  <- domType.asAbstract
+        bodyType <- (body >>= (_.asType)).locallyMergeContext(domAbs)
+        effType  <- effect >>= (_.asType)
+      yield FunctionType(domType, effType, bodyType)
+
+    case Lang.Merge(base, ext) =>
+      for
+        baseNorm <- base
+        extNorm  <- ext.locallyMergeContext(baseNorm)
+        result   <- baseNorm.merge(extNorm)
+      yield result
+
+    case Lang.Capture(domain, body) =>
+      for
+        domType <- domain >>= (_.asType)
+        context <- Process.context
+      yield Closure(context, body, domType)
+
   private def bigStep(term: Term): Process[NormValue]                         = term.unpack match
 
     case Lang.External(ref) => library.resolve(ref, this)
@@ -63,7 +84,7 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
       for
         domType <- bigTypeStep(domain)
         context <- Process.context
-      yield Closure(context, body, domType, this)
+      yield Closure(context, normalize(body), domType)
 
     case Lang.Apply =>
       Process.context.flatMap(context => context.first.flatMap2Par(context.second)(_.apply(_)))

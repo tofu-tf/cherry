@@ -13,7 +13,7 @@ object BooleansLibrary extends NameResolutionLibrary("bools"):
   }
 
   class Fn(name: String, call: (Boolean, Boolean) => Boolean) extends NormValue:
-    override def toTerm: Term = Lang.External(LibRef("bools", Lang.get(name)))
+    override def toTerm = Process.pure(Lang.External(LibRef("bools", Lang.get(name))))
 
     override def apply(term: NormValue): Process[NormValue] =
       term.first.flatMap(_.asBool).map2Par(term.second.flatMap(_.asBool))((x, y) => BooleanValue(call(x, y)))

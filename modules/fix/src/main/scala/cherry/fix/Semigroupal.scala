@@ -7,5 +7,7 @@ trait Semigroupal[F[_]] extends Functor[F]:
     def >>[B](fb: F[B]): F[B]       = map2(fb)((_, y) => y)
 
   extension [A, T <: Tuple](fa: F[A] *: T)
-    def tupled(using u: Untuple[F, F[A] *: T]): F[A *: Untupled[F, T]]               = u.zipAll(fa)(using this)
-    def mapN[C](using u: Untuple[F, F[A] *: T])(f: (A *: Untupled[F, T]) => C): F[C] = u.zipAll(fa)(using this).map(f)
+    def tupled(using u: Untuple[F, F[A] *: T]): F[A *: Untupled[F, T]]               = 
+      u.zipAll(fa)(using this)
+    def mapN[C](using u: Untuple[F, F[A] *: T])(f: (A *: Untupled[F, T]) => C): F[C] = 
+      u.zipAll(fa)(using this).map(f)
