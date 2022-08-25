@@ -16,11 +16,11 @@ object Fix:
     def fold[R](f: G[R] => R)(using Functor[G]): R =
       f(fix.unpack.map(_.fold(f)))
 
-    def foldDefer[R](f: G[TailRec[R]] => TailRec[R])(using Traverse[G]): TailRec[R] =
-      tailcall(f(fix.unpack.map(_.foldDefer(f))))
+    def foldDefer[R, F[+_]: Defer](f: G[F[R]] => F[R])(using Traverse[G]): F[R] =
+      f(fix.unpack.map(_.foldDefer(f))).defer
 
     def folds[R](f: G[R] => R)(using Traverse[G]): R =
-      fix.foldDefer[R](_.sequence.map(f)).result
+      fix.foldDefer[R, TailRec](_.sequence.map(f)).result
 
     def foldHist[R](f: G[Cofree[G, R]] => TailRec[R])(using Traverse[G]): Cofree[G, R] =
       val gc = delay(fix.unpack.map(_.foldHist(f)))

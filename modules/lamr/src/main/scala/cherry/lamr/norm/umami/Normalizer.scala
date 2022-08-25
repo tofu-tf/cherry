@@ -13,6 +13,8 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
   private def bigTypeStep(term: Term): Process[NormType]                      =
     normalize(term).flatMap(_.asType)
 
+
+  // normalization catamorphism  
   private def bigStepOnce(lang: Lang[Process[NormValue]]): Process[NormValue] = lang match
     case Lang.External(ref)  => library.resolve(ref, this)
     case Lang.Universe(opts) => Process.pure(UniverseType(opts))
@@ -30,7 +32,7 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
     case Lang.Function(domain, effect, body) =>
       for
         domType  <- domain >>= (_.asType)
-        domAbs  <- domType.asAbstract
+        domAbs   <- domType.asAbstract
         bodyType <- (body >>= (_.asType)).locallyMergeContext(domAbs)
         effType  <- effect >>= (_.asType)
       yield FunctionType(domType, effType, bodyType)
@@ -48,7 +50,41 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
         context <- Process.context
       yield Closure(context, body, domType)
 
-  private def bigStep(term: Term): Process[NormValue]                         = term.unpack match
+    case Lang.Apply =>
+      Process.context.flatMap(context => context.first.flatMap2Par(context.second)(_.apply(_)))
+
+    case Lang.Record(k, t, _) =>
+      for
+        tnorm <- t
+        ttype <- tnorm.asType
+      yield RecordType.single(k, ttype)
+
+    case Lang.Unit       => Act.pure(UnitValue)
+    case Lang.Integer(i) => Act.pure(IntegerValue(i))
+    case Lang.Str(s)     => Act.pure(StringValue(s))
+    case Lang.Float(f)   => Act.pure(FloatValue(f))
+    case Lang.Bool(b)    => Act.pure(BooleanValue(b))
+
+    case Lang.Id => Process.context
+
+    case Lang.Set(k, t) => for tnorm <- t yield RecordValue.single(k, tnorm)
+
+    case Lang.GetKey(k, up) => Process.context.flatMap(_.get(k, up))
+
+    case Lang.AndThen(tl, tr) =>
+      for
+        left  <- tl
+        right <- tr.locally(_.context = left)
+      yield right
+
+    case Lang.Narrow(t, domain) =>
+      t.flatMap2Par(domain >>= (_.asType))(_.narrow(_))
+
+
+  private def bigStep(term: Term): Process[NormValue] = term.foldDefer(bigStepOnce)
+
+
+  private def bigStepOld(term: Term): Process[NormValue]                         = term.unpack match
 
     case Lang.External(ref) => library.resolve(ref, this)
 

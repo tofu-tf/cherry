@@ -4,9 +4,9 @@ import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
 
 trait Functor[F[_]]:
-  extension [A](fa: F[A]) 
+  extension [A](fa: F[A])
     def map[B](f: A => B): F[B]
-    def widen[A1 >: A]: F[A1]       = fa.asInstanceOf[F[A1]]
+    def widen[A1 >: A]: F[A1] = fa.asInstanceOf[F[A1]]
 
   extension [G[_], A](fa: F[G[A]])
     def mapIn[B](f: A => B)(using Functor[G]): F[G[B]] =
@@ -23,9 +23,11 @@ object Functor:
       def flatMap[B](f: A => B): B                         = f(a)
       def traverse[F[+_]: Monoidal, B](f: A => F[B]): F[B] = f(a)
 
-  given Monad[TailRec] with
+  given Monad[TailRec] with Defer[TailRec] with
     def pure[A](a: A)                                                = TailCalls.done(a)
     extension [A](fa: TailRec[A]) def flatMap[B](f: A => TailRec[B]) = fa.flatMap(f)
+
+    extension [A](fa: => TailRec[A]) def defer: TailRec[A] = TailCalls.tailcall(fa)
 
   given [Y: Monoid]: Monad[[x] =>> (Y, x)] with
     def pure[A](a: A)                = (Monoid.zero, a)
