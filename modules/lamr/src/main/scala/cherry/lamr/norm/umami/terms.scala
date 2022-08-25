@@ -78,7 +78,7 @@ case class Closure(context: NormValue, body: Term, domain: NormType, norm: Norma
     for
       narrowArg   <- arg.narrow(domain)
       fullContext <- context.merge(narrowArg)
-      res         <- norm.normalize(body, fullContext)
+      res         <- norm.normalize(body).locally(_.context = fullContext)
     yield res
 end Closure
 

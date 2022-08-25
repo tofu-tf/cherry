@@ -25,6 +25,12 @@ enum Act[-State, +Res]:
 
   def flatMap2Par[S <: State, B, C](act: Act[S, B])(f: (Res, B) => Act[S, C]): Act[S, C] = Par(this, act, f)
 
+  def local[S1](f: S1 => State): Act[S1, Res] = Act.Local(this, f)
+
+  def localWith[S](f: Act[S, State]): Act[S, Res] = f.flatMap(s => local(_ => s))
+
+  def provide(s: State): Act[Any, Res] = local(_ => s)
+
   @targetName("followedBy")
   infix def *>[S <: State, B](act: => Act[S, B]): Act[S, B] = flatMap(_ => act)
 
@@ -32,9 +38,11 @@ enum Act[-State, +Res]:
     if maxSteps == 0 then throw IllegalStateException("maximum steps exhausted")
     else
       this match
-        case Action(f)     => TailCalls.done(f(state))
-        case Local(act, f) => act.runIter(f(state), maxSteps - 1)
-        case Par(l, r, f)  =>
+        case Action(f)           => TailCalls.done(f(state))
+        case Local(act, f)       => act.runIter(f(state), maxSteps - 1)
+        case Par(l, Act.unit, f) => // quick way for flatMap
+          l.runIter(state).flatMap(res => if res != null then f(res, ()).runIter(state, maxSteps - 1) else Act.stop)
+        case Par(l, r, f)        =>
           l.runIter(state, maxSteps - 1).flatMap { lres =>
             r.runIter(state, maxSteps - 1).flatMap { rres =>
               if lres != null && rres != null then f(lres, rres).runIter(state, maxSteps - 1) else Act.stop
@@ -88,6 +96,8 @@ object Act:
   given [S]: Monad[[R] =>> Act[S, R]] with
     def pure[A](a: A)                                              = Act.pure(a)
     extension [A](fa: Act[S, A]) def flatMap[B](f: A => Act[S, B]) = fa.flatMap(f)
+
+  extension [S, A](state: Act[S, A]) def locally(f: S => S): Act[S, A] = Act.Local(state, f)
 end Act
 
 trait ActMethods[S]:
@@ -108,8 +118,6 @@ trait ActMethods[S]:
     s.raise(e)
     null
   }
-
-  extension [A](fa: Act[S, A]) def local(f: S => S): Act[S, A] = Act.Local(fa, f)
 
   def option[E, A](oa: Option[A], err: => E)(using Raising[S, E]): Act[S, A] =
     oa match

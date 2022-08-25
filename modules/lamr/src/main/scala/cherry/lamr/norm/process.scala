@@ -10,20 +10,12 @@ case class State(
     var inequasions: InequasionSystem[Term] = DummyIneqSystem(),
     var symbols: Map[Long, RecordKey] = Map.empty,
     var position: Option[Position] = None,
-    var value: Option[NormValue] = None,
-    var term: Option[Term] = None,
     var errors: Vector[Error] = Vector.empty,
-    val context: NormValue = UnitValue,
 )
 
-object State:
-  given Raising[State, Cause] with
-    extension (s: State)
-      def raise(e: => Cause) =
-        s.errors :+= Error(e, s.value, s.term, s.position)
 
 case class Position(start: Long, end: Long):
-  def set: Process[Unit] = Act.Action(_.position = Some(this))
+  def set: Process[Unit] = Act.Action(_.state.position = Some(this))
 
 enum TypeCause:
   case Record, Function, Type
@@ -43,22 +35,22 @@ enum Cause:
 
 case class Error(
     cause: Cause,
-    value: Option[NormValue] = None,
+    context: NormValue = UnitValue,
     term: Option[Term] = None,
     position: Option[Position] = None,
 )
 
 end Error
 
-type Process[+A] = Act[State, A]
+type Process[+A] = Act[NormState, A]
 
-object Process extends ActMethods[State]:
-  val context = Process.read(_.context)
+object Process extends ActMethods[NormState]:
+  val context: Process[NormValue] = Process.read(_.context)
 
 def newSymbol[R](name: String, tpe: R): Process[NormValue] =
-  Act.action { state =>
-    state.symbolCount += 1
-    val id = state.symbolCount
-    state.symbols += id -> name
+  Act.action { ctx =>
+    ctx.state.symbolCount += 1
+    val id = ctx.state.symbolCount
+    ctx.state.symbols += id -> name
     Variable(id, name)
   }

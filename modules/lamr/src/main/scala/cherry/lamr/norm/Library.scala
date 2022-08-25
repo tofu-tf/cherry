@@ -21,7 +21,7 @@ private def builtins          = Vector[NameResolutionLibrary](IntsLibrary)
 private def builtinMap        = builtins.iterator.map(bi => bi.name -> bi).toMap
 private def builtinLayeredMap = LayeredMap.fromVector(builtins.map(bi => (bi.name: RecordKey) -> bi))
 
-object BuiltinLibrary extends LibraryPack(builtinMap) with RecordValueBase:
+case object BuiltinLibrary extends LibraryPack(builtinMap) with RecordValueBase:
   val map = builtinLayeredMap
 
 trait NameResolutionLibrary(val name: String) extends Library with NormValue:

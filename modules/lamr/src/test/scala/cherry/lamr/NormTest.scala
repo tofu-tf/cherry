@@ -6,20 +6,26 @@ import cherry.fix.Fix
 import cherry.fix.Fix.Fix
 import cherry.lamr.norm.ints.IntsLibrary
 import munit.Clue
+import cherry.lamr.norm.NormState
 
 class NormTest extends munit.FunSuite:
-  def debugNorm(t: Term, ctx: NormValue, state: State) = println(s"normalizing $t")
+  def printCtx(ctx: NormValue)                         = ctx match
+    case RecordValue(lm) => lm.journal.view.map((k, v) => s"$k : $v").mkString("[\n", "\n", "\n")
+    case x               => x.toString
+  def debugNorm(t: Term, ctx: NormValue, state: State) =
+    println(s"normalizing $t in ${printCtx(ctx)}\n")
 
-  val normalizer: Normalizer = UmamiNormalizer(BuiltinLibrary)
+  val normalizer: Normalizer = UmamiNormalizer(BuiltinLibrary /* , dbg = debugNorm */ )
 
-  def errClues(err: Error): IArray[Clue[_]] = IArray(err.cause, err.value)
+  def errClues(err: Error): IArray[Clue[_]] =
+    IArray(err.cause, printCtx(err.context), err.term)
 
   extension (t: Fix[Lang])
     infix def shouldNorm(to: Fix[Lang]) =
-      val state   = State()
-      val res     = normalizer.normalize(t, BuiltinLibrary).map(_.view(BuiltinLibrary)).run(state, maxSteps = 1000)
+      val norm    = NormState(BuiltinLibrary)
+      val res     = normalizer.normalize(t).map(_.view(BuiltinLibrary)).run(norm, maxSteps = 1000)
       val message = "errors during calculation"
-      assert(res.isDefined, clue = clues((message +: state.errors.flatMap(errClues))*))
+      assert(res.isDefined, clue = clues((message +: norm.state.errors.flatMap(errClues))*))
       assertEquals(res.get, to)
 
   test("int norm is same") {

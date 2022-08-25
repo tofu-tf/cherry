@@ -8,7 +8,7 @@ import cherry.lamr.norm.umami.{BuiltinNormType, IntegerValue, Narrow, NormType, 
 
 type Term = Fix[Lang]
 trait Normalizer:
-  def normalize(term: Term, context: NormValue): Process[NormValue]
+  def normalize(term: Term): Process[NormValue]
 
 trait NormValue:
   def toTerm: Term
