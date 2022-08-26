@@ -1,7 +1,7 @@
 pull_request_rules:
   - name: Request reviews and label Steward's PRs
     conditions:
-      - author=scala-steward
+      - author=Tofu-bot
     actions:
       request_reviews:
         users: [ Odomontois, road21, KS2003, saladNights, mikhailchuryakov, skye17]
@@ -19,11 +19,7 @@ pull_request_rules:
                   - files=project/plugins.sbt
           - body~=labels:.*semver-patch
           - "#approved-reviews-by>=1"
-      - and:
-          - check-success~=Test \(ubuntu-latest, 2\.12\.\d+, temurin@8\)
-          - check-success~=Test \(ubuntu-latest, 2\.12\.\d+, temurin@17\)
-          - check-success~=Test \(ubuntu-latest, 2\.13\.\d+, temurin@8\)
-          - check-success~=Test \(ubuntu-latest, 2\.13\.\d+, temurin@17\)
+      - check-success~=Test \(ubuntu-latest, 3\.1\.\d+, temurin@17\)
     actions:
       merge:
         method: rebase
