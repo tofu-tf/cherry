@@ -1,75 +1,20 @@
 package cherry.lamr.norm
 package umami
 
+import cats.syntax.parallel.given
 import cherry.lamr.{Lang, LibRef, TypeOptions}
-import cherry.utils.{Act, ActMethods, Raising}
-
+import cherry.utils.Act
+import tofu.syntax.monadic.given
 class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 
-  def normalize(term: Term): Process[NormValue]          =
-    Process.context.flatMap(context => Process.action(ctx => dbg(term, context, ctx.state))) >> bigStep(term)
-
-  private def bigTypeStep(term: Term): Process[NormType] =
-    normalize(term).flatMap(_.asType)
-
-  // normalization catamorphism
-  private def bigStepOnce(lang: Lang[Process[NormValue]]): Process[NormValue] = lang match
-    case Lang.External(ref)  => library.resolve(ref, this)
-    case Lang.Universe(opts) => Process.pure(UniverseType(opts))
-    case Lang.Builtin(bt)    => Process.pure(BuiltinNormType(bt))
-
-    case Lang.Extend(baseProc, extProc) =>
-      for
-        baseNorm <- baseProc
-        baseType <- baseNorm.asType
-        absBase  <- baseType.asAbstract
-        extNorm  <- extProc.locallyMergeContext(absBase)
-        extType  <- extNorm.asType
-      yield ExtendType(baseType, extType)
-
-    case Lang.Function(domain, effect, body) =>
-      for
-        domType  <- domain >>= (_.asType)
-        domAbs   <- domType.asAbstract
-        bodyType <- (body >>= (_.asType)).locallyMergeContext(domAbs)
-        effType  <- effect >>= (_.asType)
-      yield FunctionType(domType, effType, bodyType)
-
-    case Lang.Merge(base, ext) =>
-      for
-        baseNorm <- base
-        extNorm  <- ext.locallyMergeContext(baseNorm)
-        result   <- baseNorm.merge(extNorm)
-      yield result
-
-    case Lang.Capture(domain, body) =>
-      for
-        domType <- domain >>= (_.asType)
-        context <- Process.context
-      yield Closure(context, body, domType)
-
-    case Lang.Apply =>
-      Process.context.flatMap(context => context.first.flatMap2Par(context.second)(_.apply(_)))
-
-    case Lang.Record(k, t, _) =>
-      for
-        tnorm <- t
-        ttype <- tnorm.asType
-      yield RecordType.single(k, ttype)
-
-    case Lang.Unit       => Act.pure(UnitValue)
-    case Lang.Integer(i) => Act.pure(IntegerValue(i))
-    case Lang.Str(s)     => Act.pure(StringValue(s))
-    case Lang.Float(f)   => Act.pure(FloatValue(f))
-    case Lang.Bool(b)    => Act.pure(BooleanValue(b))
-
-    case Lang.Id => Process.context
+  def normalize(term: Term, context: NormValue): Process[NormValue] =
+    Act.action(st => dbg(term, context, st)) >> bigStep(term, context)
 
   private def bigTypeStep(term: Term, context: NormValue): Process[NormType] =
     normalize(term, context).flatMap(_.asType)
 
-  private def bigStep(term: Term, context: NormValue): Process[NormValue]    = term.unpack match
+  private def bigStep(term: Term, context: NormValue): Process[NormValue] = term.unpack match
 
     case Lang.External(ref) => library.resolve(context, ref, this)
 
@@ -79,40 +24,41 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
 
     case Lang.Extend(tb, te) =>
       for
-        baseNorm <- normalize(tb)
+        baseNorm <- normalize(tb, context)
         baseType <- baseNorm.asType
         absBase  <- baseType.asAbstract
-        extNorm  <- normalize(te).locallyMergeContext(absBase)
+        extCtx   <- context.merge(absBase)
+        extNorm  <- normalize(te, extCtx)
         extType  <- extNorm.asType
       yield ExtendType(baseType, extType)
 
     case Lang.Function(domain, effect, body) =>
       for
-        domType  <- bigTypeStep(domain)
+        domType  <- bigTypeStep(domain, context)
         domTerm  <- domType.asAbstract
-        bodyType <- bigTypeStep(body).locallyMergeContext(domTerm)
-        effType  <- bigTypeStep(effect)
+        extCtx   <- context.merge(domTerm)
+        bodyType <- bigTypeStep(body, extCtx)
+        effType  <- bigTypeStep(effect, context)
       yield FunctionType(domType, effType, bodyType)
 
     case Lang.Merge(base, ext) =>
       for
-        baseNorm <- normalize(base)
-        extNorm  <- normalize(ext).locallyMergeContext(baseNorm)
+        baseNorm <- normalize(base, context)
+        extCtx   <- context.merge(baseNorm)
+        extNorm  <- normalize(ext, extCtx)
         result   <- baseNorm.merge(extNorm)
       yield result
 
     case Lang.Capture(domain, body) =>
-      for
-        domType <- bigTypeStep(domain)
-        context <- Process.context
-      yield Closure(context, normalize(body), domType)
+      for domType <- bigTypeStep(domain, context)
+      yield Closure(context, body, domType, this)
 
     case Lang.Apply =>
-      Process.context.flatMap(context => context.first.flatMap2Par(context.second)(_.apply(_)))
+      context.first.flatMap2Par(context.second)(_.apply(_))
 
     case Lang.Record(k, t, _) =>
       for
-        tnorm <- normalize(t)
+        tnorm <- normalize(t, context)
         ttype <- tnorm.asType
       yield RecordType.single(k, ttype)
 
@@ -122,17 +68,17 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
     case Lang.Float(f)   => Act.pure(FloatValue(f))
     case Lang.Bool(b)    => Act.pure(BooleanValue(b))
 
-    case Lang.Id => Process.context
+    case Lang.Id => Act.pure(context)
 
-    case Lang.Set(k, t) => for tnorm <- normalize(t) yield RecordValue.single(k, tnorm)
+    case Lang.Set(k, t) => for tnorm <- normalize(t, context) yield RecordValue.single(k, tnorm)
 
-    case Lang.GetKey(k, up) => Process.context.flatMap(_.get(k, up))
+    case Lang.GetKey(k, up) => context.get(k, up)
 
     case Lang.AndThen(tl, tr) =>
       for
-        left  <- normalize(tl)
-        right <- normalize(tr).locally(_.context = left)
+        left  <- normalize(tl, context)
+        right <- normalize(tr, left)
       yield right
 
     case Lang.Narrow(t, domain) =>
-      normalize(t).flatMap2Par(normalize(domain).flatMap(_.asType))(_.narrow(_))
+      normalize(t, context).flatMap2Par(normalize(domain, context).flatMap(_.asType))(_.narrow(_))
