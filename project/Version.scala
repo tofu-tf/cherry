@@ -7,7 +7,7 @@ object Version {
 
   val cats = "2.7.0"
 
-  val tofu = "0.10.6"
+  val tofu = "0.10.8"
 
   val catsParse = "0.3.6"
 }
