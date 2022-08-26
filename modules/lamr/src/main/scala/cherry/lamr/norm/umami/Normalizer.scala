@@ -8,13 +8,13 @@ import tofu.syntax.monadic.given
 class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 
-  def normalize(term: Term, context: NormValue): Process[NormValue]          =
+  def normalize(term: Term, context: NormValue): Process[NormValue] =
     Act.action(st => dbg(term, context, st)) >> bigStep(term, context)
 
   private def bigTypeStep(term: Term, context: NormValue): Process[NormType] =
     normalize(term, context).flatMap(_.asType)
 
-  private def bigStep(term: Term, context: NormValue): Process[NormValue]    = term.unpack match
+  private def bigStep(term: Term, context: NormValue): Process[NormValue] = term.unpack match
 
     case Lang.External(ref) => library.resolve(context, ref, this)
 
