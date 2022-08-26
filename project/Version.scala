@@ -9,5 +9,5 @@ object Version {
 
   val tofu = "0.10.6"
 
-  val catsParse = "0.3.6"
+  val catsParse = "0.3.8"
 }
