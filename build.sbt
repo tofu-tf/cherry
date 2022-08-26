@@ -20,11 +20,11 @@ val scala3Settings = scalacOptions ++= Vector(
 
 val defaultSettings = testDependencies ++ scala3Settings
 
-lazy val fix   = project
+lazy val fix = project
   .in(modules / "fix")
   .settings(name := "cherry-fix")
 
-lazy val lamr  = project
+lazy val lamr = project
   .in(modules / "lamr")
   .settings(name := "cherry-lamr")
   .dependsOn(fix)
