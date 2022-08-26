@@ -20,14 +20,14 @@ trait NormType extends NormValue:
 
   override def asType: Process[NormType] = Act.pure(this)
 
-case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None)  extends NormType:
+case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None) extends NormType:
   override def toTerm = Process.pure(Lang.Builtin(bt))
 
-case class UniverseType(options: TypeOptions)                              extends NormType:
+case class UniverseType(options: TypeOptions) extends NormType:
   override def toTerm = Process.pure(Lang.Universe(options))
 
-case class RecordType(fields: LayeredMap[RecordKey, NormType])             extends NormType:
-  def toTerm                                                   =
+case class RecordType(fields: LayeredMap[RecordKey, NormType]) extends NormType:
+  def toTerm =
     fields.journal
       .parTraverse((k, v) => v.toTerm.map(Lang.Record(k, _, TypeOptions()).fix))
       .map(_.reduce(Lang.Extend(_, _).fix))

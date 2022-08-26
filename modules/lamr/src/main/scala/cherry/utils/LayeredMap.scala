@@ -19,7 +19,7 @@ class LayeredMap[K, +V](val journal: Vector[(K, V)], val values: Map[K, List[V]]
     }
   )
 
-  override def toString: String       = journal.mkString("LayeredMap(", ", ", ")")
+  override def toString: String = journal.mkString("LayeredMap(", ", ", ")")
 
 object LayeredMap:
   def fromVector[K, V](v: Vector[(K, V)]): LayeredMap[K, V] = {

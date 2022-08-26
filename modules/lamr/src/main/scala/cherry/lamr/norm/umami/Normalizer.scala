@@ -7,7 +7,7 @@ import cherry.utils.{Act, ActMethods, Raising}
 class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, State) => Unit = (_, _, _) => ())
     extends Normalizer:
 
-  def normalize(term: Term): Process[NormValue]          =
+  def normalize(term: Term): Process[NormValue] =
     Process.context.flatMap(context => Process.action(ctx => dbg(term, context, ctx.state))) >> bigStep(term)
 
   private def bigTypeStep(term: Term): Process[NormType] =
@@ -79,7 +79,7 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
     case Lang.Narrow(t, domain) =>
       t.flatMap2Par(domain >>= (_.asType))(_.narrow(_))
 
-  private def bigStep(term: Term): Process[NormValue]                         = term.foldDefer(bigStepOnce)
+  private def bigStep(term: Term): Process[NormValue] = term.foldDefer(bigStepOnce)
 
   private def bigStepOld(term: Term): Process[NormValue] = term.unpack match
 

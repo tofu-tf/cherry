@@ -10,7 +10,7 @@ def showTypeMacro[T <: AnyKind: Type](using q: Quotes): Expr[String] =
 
   Expr(t.show)
 
-inline def infoType[T <: AnyKind]: Unit                              = ${ infoTypeMacro[T] }
+inline def infoType[T <: AnyKind]: Unit = ${ infoTypeMacro[T] }
 
 def infoTypeMacro[T <: AnyKind: Type](using q: Quotes): Expr[Unit] =
   import q.reflect.*
@@ -21,7 +21,7 @@ def infoTypeMacro[T <: AnyKind: Type](using q: Quotes): Expr[Unit] =
 
   '{ () }
 
-inline def debug(inline s: String): Unit                           = ${ debugMacro('s) }
+inline def debug(inline s: String): Unit = ${ debugMacro('s) }
 
 def debugMacro(s: Expr[String])(using q: Quotes): Expr[Unit] =
 

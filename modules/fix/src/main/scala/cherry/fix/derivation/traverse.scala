@@ -15,7 +15,7 @@ enum SomeType:
 object SomeType:
   def apply(): SomeType = Instance
 
-inline def deriveTraverse[T[+x]]: Traverse[T]                                                         =
+inline def deriveTraverse[T[+x]]: Traverse[T] =
   val x = SomeType()
   val y = SomeType()
 
@@ -67,7 +67,7 @@ inline def traverseTuple[T <: Tuple, F[+_], A, B](t: T)(f: A => F[B])(using F: M
     case _: EmptyTuple     =>
       F.emptyTuple
 
-inline def collectInstances[TX <: Tuple, TY <: Tuple, X, Y]: Tuple                                    =
+inline def collectInstances[TX <: Tuple, TY <: Tuple, X, Y]: Tuple =
   inline erasedValue[TX] match
     case _: (fx *: restX) =>
       inline erasedValue[TY] match {
