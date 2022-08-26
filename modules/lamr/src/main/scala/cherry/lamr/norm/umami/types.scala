@@ -9,7 +9,7 @@ import scala.collection.immutable.{IntMap, TreeMap}
 import cherry.fix.TraverseFilter
 import cherry.fix.Functor.{given TraverseFilter[Vector]}
 
-trait NormType                                                             extends NormValue:
+trait NormType extends NormValue:
   def fieldTypes: Process[Vector[(RecordKey, NormType)]] = Act.pure(Vector.empty)
 
   def asAbstract: Process[NormValue] = Act.pure(Abstract(Lang.Id, this))
@@ -32,13 +32,13 @@ case class RecordType(fields: LayeredMap[RecordKey, NormType])             exten
       .parTraverse((k, v) => v.toTerm.map(Lang.Record(k, _, TypeOptions()).fix))
       .map(_.reduce(Lang.Extend(_, _).fix))
 
-  override def asAbstract                                      =
+  override def asAbstract =
     fields.parTraverse(t => t.asAbstract).map(kvs => RecordValue.fromVector(kvs.journal))
 
   override def got(key: RecordKey, up: Int): Process[NormType] =
     Act.option(fields.get(key, up), Cause.MissingKey(key))
 
-  override def fieldTypes                                      = Act.pure(fields.journal)
+  override def fieldTypes = Act.pure(fields.journal)
 
 case class FunctionType(dom: NormType, effect: NormType, result: NormType) extends NormType:
   def toTerm = (dom.toTerm, effect.toTerm, result.toTerm).parMapN(Lang.Function(_, _, _).fix)

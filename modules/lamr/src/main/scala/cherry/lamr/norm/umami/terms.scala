@@ -35,7 +35,7 @@ trait RecordValueBase extends NormValue:
   private def toRecord(key: RecordKey, value: NormValue): Process[Term] =
     value.toTerm.map(Lang.set(key, _))
 
-  private def joinAll(it: IterableOnce[Term]): Term                     =
+  private def joinAll(it: IterableOnce[Term]): Term         =
     it.iterator.reduceOption((rec, set) => Lang.Merge(rec, set).fix).getOrElse(Lang.Unit)
 
   override def merge(term: NormValue): Process[NormValue]               = term match
@@ -113,7 +113,7 @@ case object UnitValue                                extends NormValue:
 
   override def merge(term: NormValue): Process[NormValue] = Act.pure(term)
 
-trait BuiltinTypeValue(bt: BuiltinType)     extends NormValue:
+trait BuiltinTypeValue(bt: BuiltinType) extends NormValue:
   override def narrow(domain: NormType): Process[NormValue] =
     domain match
       case BuiltinNormType(`bt`, _) => Act.pure(this)
@@ -128,7 +128,7 @@ case class IntegerValue(value: BigInt)      extends BuiltinTypeValue(BuiltinType
 case class StringValue(value: String)       extends BuiltinTypeValue(BuiltinType.Str):
   def toTerm = Process.pure(Lang.Str(value))
 
-case class FloatValue(value: Double)        extends BuiltinTypeValue(BuiltinType.Float):
+case class FloatValue(value: Double) extends BuiltinTypeValue(BuiltinType.Float):
 
   def toTerm = Process.pure(Lang.Float(value))
 

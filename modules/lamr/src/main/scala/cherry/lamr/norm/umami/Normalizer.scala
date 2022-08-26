@@ -66,24 +66,12 @@ class UmamiNormalizer(library: Library, dbg: (Term, cherry.lamr.norm.NormValue, 
 
     case Lang.Id => Process.context
 
-    case Lang.Set(k, t) => for tnorm <- t yield RecordValue.single(k, tnorm)
+  private def bigTypeStep(term: Term, context: NormValue): Process[NormType] =
+    normalize(term, context).flatMap(_.asType)
 
-    case Lang.GetKey(k, up) => Process.context.flatMap(_.get(k, up))
+  private def bigStep(term: Term, context: NormValue): Process[NormValue]    = term.unpack match
 
-    case Lang.AndThen(tl, tr) =>
-      for
-        left  <- tl
-        right <- tr.locally(_.context = left)
-      yield right
-
-    case Lang.Narrow(t, domain) =>
-      t.flatMap2Par(domain >>= (_.asType))(_.narrow(_))
-
-  private def bigStep(term: Term): Process[NormValue]                         = term.foldDefer(bigStepOnce)
-
-  private def bigStepOld(term: Term): Process[NormValue] = term.unpack match
-
-    case Lang.External(ref) => library.resolve(ref, this)
+    case Lang.External(ref) => library.resolve(context, ref, this)
 
     case Lang.Universe(opts) => Act.pure(UniverseType(opts))
 
