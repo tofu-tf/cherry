@@ -42,7 +42,7 @@ trait NameResolutionLibrary(val name: String) extends Library with NormValue:
   override def get(key: RecordKey, up: Int): Process[NormValue] =
     if up == 0 then getKey(key) else Act.error(Cause.MissingKey(key))
 
-  private def getKey(key: RecordKey): Process[NormValue]        = key match
+  private def getKey(key: RecordKey): Process[NormValue] = key match
     case RecordKey.Symbol(name) => Act.option(members.lift(name), Cause.MissingKey(key))
     case RecordKey.Index(0)     => Act.pure(this)
     case _                      => Act.error(Cause.MissingKey(key))

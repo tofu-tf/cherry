@@ -25,7 +25,7 @@ val scala3Settings = scalacOptions ++= Vector(
 
 val defaultSettings = testDependencies ++ scala3Settings
 
-lazy val lamr  = project
+lazy val lamr = project
   .in(modules / "lamr")
   .settings(name := "cherry-lamr")
   .settings(lamrDependencies2)

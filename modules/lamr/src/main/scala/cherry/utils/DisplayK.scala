@@ -28,7 +28,7 @@ object TofuDisplay:
     def displayBuildIn(cfg: Display.Config, a: A, indent: Vector[String], label: Vector[String]): Eval[Vector[String]] =
       d.displayBuild(cfg, a).map(label.++)
 
-    override def displayBuild(cfg: Display.Config, a: A): Eval[Vector[String]]                                         =
+    override def displayBuild(cfg: Display.Config, a: A): Eval[Vector[String]] =
       d.displayBuild(cfg, a)
 
   end FromDisplay
@@ -37,14 +37,14 @@ object TofuDisplay:
 
   inline def tname[A]: String = ${ tnameMacro[A] }
 
-  inline def derived[A](using m: Mirror.Of[A]): TofuDisplay[A]                                                      =
+  inline def derived[A](using m: Mirror.Of[A]): TofuDisplay[A] =
     println("gogo")
     val instances: Vector[TofuDisplay[Any]] = summonDisplays[m.MirroredElemTypes].asInstanceOf[Vector[TofuDisplay[Any]]]
     inline m match
       case m: Mirror.SumOf[A]     => derivedSum(m, instances)
       case m: Mirror.ProductOf[A] => derivedProduct(m, instances)
 
-  private inline def derivedSum[A](m: Mirror.SumOf[A], instances: Vector[TofuDisplay[Any]]): TofuDisplay[A]         =
+  private inline def derivedSum[A](m: Mirror.SumOf[A], instances: Vector[TofuDisplay[Any]]): TofuDisplay[A] =
     (cfg, a: A, ind, lab) => instances(m.ordinal(a)).displayBuildIn(cfg, a, ind, lab)
 
   private inline def derivedProduct[A](m: Mirror.ProductOf[A], instances: Vector[TofuDisplay[Any]]): TofuDisplay[A] =
