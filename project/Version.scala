@@ -5,7 +5,7 @@ object Version {
 
   val munit = "0.7.29"
 
-  val cats = "2.7.0"
+  val cats = "2.8.0"
 
   val tofu = "0.10.8"
 
