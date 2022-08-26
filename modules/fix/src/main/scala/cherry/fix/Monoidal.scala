@@ -3,9 +3,7 @@ package cherry.fix
 trait Monoidal[F[_]] extends Semigroupal[F]:
   def pure[A](a: A): F[A]
 
-  extension [A](fa: F[A])
-    def map[B](f: A => B): F[B]     = fa.map2(unit)((a, _) => f(a))
-
+  extension [A](fa: F[A]) def map[B](f: A => B): F[B] = fa.map2(unit)((a, _) => f(a))
 
   val unit        = pure(())
   val emptyTuple  = pure(EmptyTuple)
@@ -14,7 +12,6 @@ trait Monoidal[F[_]] extends Semigroupal[F]:
 
   extension [A, B](fab: F[A => B]) def ap(fa: F[A]): F[B]                     = fab.map2(fa)(_(_))
   extension [A, B, C](fabc: F[(A, B) => C]) def ap2(fa: F[A], fb: F[B]): F[C] = (fabc, fa, fb).mapN(_(_, _))
-
 
   def collectVector[A, B](v: Vector[A])(f: A => F[Option[B]]): F[Vector[B]] =
     if v.isEmpty then emptyVector.widen

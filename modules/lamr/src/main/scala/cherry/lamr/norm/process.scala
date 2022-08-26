@@ -13,7 +13,6 @@ case class State(
     var errors: Vector[Error] = Vector.empty,
 )
 
-
 case class Position(start: Long, end: Long):
   def set: Process[Unit] = Act.Action(_.state.position = Some(this))
 

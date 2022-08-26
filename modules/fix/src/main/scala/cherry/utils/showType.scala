@@ -14,7 +14,7 @@ inline def infoType[T <: AnyKind]: Unit                              = ${ infoTy
 
 def infoTypeMacro[T <: AnyKind: Type](using q: Quotes): Expr[Unit] =
   import q.reflect.*
-  
+
   val t = TypeRepr.of[T]
 
   report.info(TypeRepr.of[T].dealias.widen.show)

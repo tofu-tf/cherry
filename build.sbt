@@ -8,7 +8,6 @@ val testDependencies = libraryDependencies ++= Vector(
   "org.scalameta" %% "munit"     % Version.munit     % Test
 )
 
-
 val parseDependencies2 = libraryDependencies ++= Vector(
 )
 
