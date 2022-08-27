@@ -53,10 +53,10 @@ enum Lang[+R] extends SimpleTraversing[Lang, R]:
 
   case External(ref: LibRef) extends Lang[Nothing]
 
-  case Str(value: String) extends Lang[Nothing]
-  case Float(value: Double) extends Lang[Nothing]
+  case Str(value: String)     extends Lang[Nothing]
+  case Float(value: Double)   extends Lang[Nothing]
   case Integer(value: BigInt) extends Lang[Nothing]
-  case Bool(value: Boolean) extends Lang[Nothing]
+  case Bool(value: Boolean)   extends Lang[Nothing]
 
   def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
     case u @ (
