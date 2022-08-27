@@ -53,10 +53,10 @@ enum Lang[+R] derives Traverse:
 
   case External(ref: LibRef) extends Lang[Nothing]
 
-  case Str(value: String) extends Lang[Nothing]
-  case Float(value: Double) extends Lang[Nothing]
+  case Str(value: String)     extends Lang[Nothing]
+  case Float(value: Double)   extends Lang[Nothing]
   case Integer(value: BigInt) extends Lang[Nothing]
-  case Bool(value: Boolean) extends Lang[Nothing]
+  case Bool(value: Boolean)   extends Lang[Nothing]
 
 type Term = Fix[Lang]
 
