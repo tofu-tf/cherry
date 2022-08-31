@@ -8,34 +8,33 @@ val testDependencies = libraryDependencies ++= Vector(
   "org.scalameta" %% "munit"     % Version.munit     % Test
 )
 
-val lamrDependencies2 = libraryDependencies ++= Vector(
-  "tf.tofu"       %% "tofu-kernel" % Version.tofu,
-  "org.typelevel" %% "cats-free"   % Version.cats,
-).map(_.cross(CrossVersion.for3Use2_13))
-
 val parseDependencies2 = libraryDependencies ++= Vector(
-  "org.typelevel" %% "cats-parse" % Version.catsParse,
-).map(_.cross(CrossVersion.for3Use2_13))
+)
 
 val scala3Settings = scalacOptions ++= Vector(
   "-Yexplicit-nulls",
+  "-Yshow-suppressed-errors",
   "-encoding",
   "utf-8",
 )
 
 val defaultSettings = testDependencies ++ scala3Settings
 
+lazy val fix = project
+  .in(modules / "fix")
+  .settings(name := "cherry-fix")
+
 lazy val lamr = project
   .in(modules / "lamr")
   .settings(name := "cherry-lamr")
-  .settings(lamrDependencies2)
+  .dependsOn(fix)
   .settings(defaultSettings)
 
 lazy val parse = project
   .in(modules / "parse")
   .settings(name := "cherry-parse")
   .settings(defaultSettings)
-  .settings(parseDependencies2)
+  .settings(libraryDependencies += "org.typelevel" %% "cats-parse" % Version.catsParse)
   .dependsOn(lamr)
 
 lazy val tests = project

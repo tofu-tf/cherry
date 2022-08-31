@@ -6,11 +6,11 @@ import cats.data.NonEmptyList
 import cats.parse.Parser
 import cats.parse.Parser.*
 import cherry.fix.Fix
+import cherry.fix.Fix.Fix
 import cherry.lamr.{Lang, RecordKey}
 import cherry.lamr.norm.Term
 import cherry.lamr.parse.basic.{*, given}
 import cherry.lamr.parse.types.typeTerm
-import tofu.syntax.monadic.*
 
 val term: Parser[Term] = defer(theTerm)
 
@@ -32,7 +32,7 @@ val listTerm = char('[') *> listSyntax <* char(']')
 def mergeAll(terms: IterableOnce[Fix[Lang]]): Fix[Lang] =
   terms.iterator.reduceOption(Lang.Merge(_, _).fix).getOrElse(Lang.Unit)
 
-val assignment = (symbolKey, char('=').spaced *> term).mapN((key, t) => Lang.set(key, t))
+val assignment = symbolKey.map2(char('=').spaced *> term)((key, t) => Lang.set(key, t))
 
 val recordElement = assignment.backtrack.eitherOr(term)
 

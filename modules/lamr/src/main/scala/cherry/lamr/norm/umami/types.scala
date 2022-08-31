@@ -4,9 +4,10 @@ package umami
 import cherry.fix.Fix
 import cherry.lamr.{BuiltinType, Lang, RecordKey, TypeOptions}
 import cherry.utils.{Act, LayeredMap}
-import tofu.syntax.parallel.given
 
 import scala.collection.immutable.{IntMap, TreeMap}
+import cherry.fix.TraverseFilter
+import cherry.fix.Functor.{given TraverseFilter[Vector]}
 
 trait NormType extends NormValue:
   def fieldTypes: Process[Vector[(RecordKey, NormType)]] = Act.pure(Vector.empty)
@@ -20,14 +21,16 @@ trait NormType extends NormValue:
   override def asType: Process[NormType] = Act.pure(this)
 
 case class BuiltinNormType(bt: BuiltinType, ext: Option[NormType] = None) extends NormType:
-  override def toTerm: Term = Lang.Builtin(bt)
+  override def toTerm = Process.pure(Lang.Builtin(bt))
 
 case class UniverseType(options: TypeOptions) extends NormType:
-  override def toTerm: Term = Lang.Universe(options)
+  override def toTerm = Process.pure(Lang.Universe(options))
 
 case class RecordType(fields: LayeredMap[RecordKey, NormType]) extends NormType:
-  def toTerm: Term =
-    fields.journal.map((k, v) => Lang.Record(k, v.toTerm, TypeOptions()).fix).reduce(Lang.Extend(_, _).fix)
+  def toTerm =
+    fields.journal
+      .parTraverse((k, v) => v.toTerm.map(Lang.Record(k, _, TypeOptions()).fix))
+      .map(_.reduce(Lang.Extend(_, _).fix))
 
   override def asAbstract =
     fields.parTraverse(t => t.asAbstract).map(kvs => RecordValue.fromVector(kvs.journal))
@@ -38,7 +41,7 @@ case class RecordType(fields: LayeredMap[RecordKey, NormType]) extends NormType:
   override def fieldTypes = Act.pure(fields.journal)
 
 case class FunctionType(dom: NormType, effect: NormType, result: NormType) extends NormType:
-  def toTerm = Lang.Function(dom.toTerm, effect.toTerm, result.toTerm).fix
+  def toTerm = (dom.toTerm, effect.toTerm, result.toTerm).parMapN(Lang.Function(_, _, _).fix)
 
 object RecordType:
   def single(key: RecordKey, fieldType: NormType) = RecordType.fromVector(Vector(key -> fieldType))
@@ -46,4 +49,4 @@ object RecordType:
   def fromVector(kvs: Vector[(RecordKey, NormType)]) = RecordType(LayeredMap.fromVector(kvs))
 
 case class ExtendType(base: NormType, ext: NormType) extends NormType:
-  def toTerm = Lang.Extend(base.toTerm, ext.toTerm).fix
+  def toTerm = base.toTerm.parMap2(ext.toTerm)(Lang.Extend(_, _).fix)

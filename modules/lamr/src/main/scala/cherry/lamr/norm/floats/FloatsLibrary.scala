@@ -14,7 +14,7 @@ object FloatsLibrary extends NameResolutionLibrary("floats"):
   }
 
   class Fn(name: String, call: (Double, Double) => Double) extends NormValue:
-    override def toTerm: Term = Lang.External(LibRef("floats", Lang.get(name)))
+    override def toTerm = Process.pure(Lang.External(LibRef("floats", Lang.get(name))))
 
     override def apply(term: NormValue): Process[NormValue] =
       term.first.flatMap(_.asDouble).map2Par(term.second.flatMap(_.asDouble))((x, y) => FloatValue(call(x, y)))

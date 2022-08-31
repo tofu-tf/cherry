@@ -1,6 +1,6 @@
 package cherry.lamr
-import cats.{Applicative, Eval, Traverse}
-import cherry.fix.Fix
+import cherry.fix.{Fix, Traverse}
+import cherry.fix.Fix.Fix
 import cherry.lamr.Lang.{Capture, External, GetKey, Universe}
 import cherry.utils.SimpleTraversing
 
@@ -29,7 +29,7 @@ object TypeOptions:
 enum BuiltinType:
   case Integer, Float, Str, Bool, Any
 
-enum Lang[+R] extends SimpleTraversing[Lang, R]:
+enum Lang[+R] derives Traverse:
   case Universe(options: TypeOptions) extends Lang[Nothing]
 
   case Record(name: RecordKey, typ: R, options: TypeOptions)
@@ -57,21 +57,6 @@ enum Lang[+R] extends SimpleTraversing[Lang, R]:
   case Float(value: Double) extends Lang[Nothing]
   case Integer(value: BigInt) extends Lang[Nothing]
   case Bool(value: Boolean) extends Lang[Nothing]
-
-  def traverse[F[_], X](f: R => F[X])(using F: Applicative[F]): F[Lang[X]] = this match
-    case u @ (
-          _: Universe | _: Builtin | Id | Unit | Apply | _: Str | _: Float | _: Integer | _: Bool | _: External |
-          _: GetKey
-        ) =>
-      F.pure(u)
-    case Extend(base, deps)               => F.map2(f(base), f(deps))(Extend(_, _))
-    case Function(domain, effect, result) => F.map3(f(domain), f(effect), f(result))(Function(_, _, _))
-    case Set(key, term)                   => F.map(f(term))(Set(key, _))
-    case Merge(base, deps)                => F.map2(f(base), f(deps))(Merge(_, _))
-    case Narrow(term, typ)                => F.map2(f(term), f(typ))(Narrow(_, _))
-    case AndThen(left, right)             => F.map2(f(left), f(right))(AndThen(_, _))
-    case Capture(domain, body)            => F.map2(f(domain), f(body))(Capture(_, _))
-    case Record(name, typ, options)       => F.map(f(typ))(Record(name, _, options))
 
 type Term = Fix[Lang]
 
@@ -138,7 +123,5 @@ object Lang:
     def -->(body: Term): Term = Lang.Function(domain, eff, body).fix
 
   given Conversion[BuiltinType, Term] = Lang.Builtin(_)
-
-  given Traverse[Lang] = SimpleTraversing.traverseInstance[Lang]
 
 type LangVal = Fix[Lang]

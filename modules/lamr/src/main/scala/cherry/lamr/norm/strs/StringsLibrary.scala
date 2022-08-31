@@ -10,7 +10,7 @@ object StringsLibrary extends NameResolutionLibrary("strs"):
   }
 
   class Fn(name: String, call: (String, String) => String) extends NormValue:
-    override def toTerm: Term = Lang.External(LibRef("strs", Lang.get(name)))
+    override def toTerm = Process.pure(Lang.External(LibRef("strs", Lang.get(name))))
 
     override def apply(term: NormValue): Process[NormValue] =
       term.first.flatMap(_.asStr).map2Par(term.second.flatMap(_.asStr))((x, y) => StringValue(call(x, y)))
