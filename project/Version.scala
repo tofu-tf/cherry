@@ -5,5 +5,5 @@ object Version {
 
   val munit = "0.7.29"
 
-  val catsParse = "0.3.6"
+  val catsParse = "0.3.10"
 }
